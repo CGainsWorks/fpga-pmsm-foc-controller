@@ -12,7 +12,7 @@ gains describe any machine once its own bases are used.
 
 The inverter is represented by its average over one PWM period.  That is exact
 for the fundamental and drops only the switching ripple, whose lowest component
-sits at 20 kHz, sixty-three times above the 318 Hz closed-loop bandwidth, and is
+sits at 20 kHz, sixty-three times above the 318 Hz closed-loop bandwidth and is
 attenuated by the machine inductance by the same factor.  The switching waveform
 itself, including dead time, is checked separately in ``tb/tb_pwm3ph.vhd``; the
 two testbenches together cover what a single switching-resolution closed-loop

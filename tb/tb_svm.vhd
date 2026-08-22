@@ -9,7 +9,7 @@
 -- within the rounding of one halving.  That is the statement that the injection
 -- has centred the three references in the rail, which is the same thing as
 -- splitting the zero-vector time equally between V0 and V7.  If the offset were
--- computed wrongly, or not at all, this is the check that fails.
+-- computed wrongly or not at all, this is the check that fails.
 --
 -- Linear range.  The vector file sweeps a balanced set at 0.5, 1.0 and 1.1 per
 -- unit.  At 1.0 the duties must reach the rails and the over-modulation flag

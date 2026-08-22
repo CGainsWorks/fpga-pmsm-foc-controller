@@ -17,7 +17,7 @@
 -- keeps the direction exactly.
 --
 -- The inverse Park rotation is then free.  The limiter has already put the
--- voltage in polar form, and
+-- voltage in polar form and
 --
 --     R(theta) R(phi) [m; 0] = R(theta + phi) [m; 0]
 --
@@ -26,11 +26,11 @@
 -- addition is a plain 16-bit add: the binary angular measure is a residue system
 -- modulo one turn, so it wraps correctly with no comparison and no correction.
 --
--- Latency 66 clocks, or 0.66 us at 100 MHz, against a 50 us control period.
+-- Latency 66 clocks or 0.66 us at 100 MHz, against a 50 us control period.
 -- Expressed as loop phase lag at the 318 Hz closed-loop bandwidth that is 0.076
 -- degrees, which is why no attempt is made to shorten it.  The delay that
 -- actually matters is the one and a half sample periods between taking the
--- current sample and the centre of the PWM period the answer is applied in, and
+-- current sample and the centre of the PWM period the answer is applied in and
 -- that is 8.6 degrees, a hundred times larger.  Moving the transform arithmetic
 -- into hardware is what makes the first number negligible and leaves only the
 -- second, which is set by the modulator and not by the arithmetic.
@@ -81,9 +81,13 @@ end entity current_loop;
 
 architecture rtl of current_loop is
 
-  signal theta_h : signed(C_W_ANG - 1 downto 0);
-  signal idref_h : signed(C_W_DATA - 1 downto 0);
-  signal iqref_h : signed(C_W_DATA - 1 downto 0);
+  -- Power-up values rather than a reset, as in rtl/cordic.vhd.  These hold the
+  -- sample-time context and mean nothing before the first sample; a defined
+  -- value keeps the simulation free of metavalue noise while the design sits
+  -- waiting to be configured.
+  signal theta_h : signed(C_W_ANG - 1 downto 0)  := (others => '0');
+  signal idref_h : signed(C_W_DATA - 1 downto 0) := (others => '0');
+  signal iqref_h : signed(C_W_DATA - 1 downto 0) := (others => '0');
 
   signal cl_valid : std_logic;
   signal ialpha   : signed(C_W_DATA - 1 downto 0);
@@ -130,7 +134,7 @@ begin
 
   -- Hold the sample-time angle and references.  The angle is used twice, once to
   -- rotate the measurement into the rotor frame and once to rotate the answer
-  -- back out, and both uses must see the same angle or the two transforms do not
+  -- back out and both uses must see the same angle or the two transforms do not
   -- compose to the identity.
   p_hold : process (clk) is
   begin
@@ -146,7 +150,7 @@ begin
   end process p_hold;
 
   -- Negating a BAM angle is exact for every value including the end point:
-  -- -(-pi) is +pi, and +pi and -pi are the same angle.
+  -- -(-pi) is +pi and +pi and -pi are the same angle.
   theta_neg <= wrap_to(-resize(theta_h, C_W_ANG + 1), C_W_ANG);
 
   u_clarke : entity work.clarke
@@ -236,7 +240,7 @@ begin
   p_limit : process (clk) is
   begin
 
-    if rising_edge(clk) then
+    if rising_edge(clk) and vc_valid = '1' then
       if mag > vmax then
         mag_lim <= vmax;
       else
@@ -294,6 +298,10 @@ begin
         lm_valid <= '0';
         busy     <= '0';
         overrun  <= '0';
+        id_meas  <= (others => '0');
+        iq_meas  <= (others => '0');
+        vd_out   <= (others => '0');
+        vq_out   <= (others => '0');
       else
         lm_valid <= vc_valid;
 

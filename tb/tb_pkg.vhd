@@ -6,7 +6,7 @@
 --
 -- Every testbench in this repository is self-checking.  None of them produce a
 -- waveform for a person to look at and none of them pass by not crashing: each
--- one counts its comparisons, reports the count, and fails the simulation if any
+-- one counts its comparisons, reports the count and fails the simulation if any
 -- comparison did not hold.  A testbench that reports zero comparisons fails too,
 -- because a vector file that failed to open would otherwise look like a pass.
 -- -----------------------------------------------------------------------------

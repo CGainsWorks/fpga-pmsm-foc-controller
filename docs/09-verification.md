@@ -26,7 +26,7 @@ place, a saturation that wraps.
 **Layer three: the RTL matches the mathematics.** Layer two would pass if the
 model and the RTL were wrong in the same way. So the CORDIC and Clarke
 testbenches additionally compare against `ieee.math_real` floating point, within
-a bound derived in docs/03 before it is measured, and report the worst error they
+a bound derived in docs/03 before it is measured and report the worst error they
 actually saw. The closed-loop testbench compares against a control-theory
 prediction rather than against any model of the arithmetic at all.
 
@@ -57,7 +57,7 @@ Every one of the block-level testbenches passes with the following bugs in place
 * a stage started on the wrong valid.
 
 All four produce perfectly reasonable-looking outputs from every individual
-block, and all four are caught by comparing the assembled datapath against the
+block and all four are caught by comparing the assembled datapath against the
 model on 401 updates that include a rotating machine and random angles. It checks
 seven internal nodes per update rather than only the outputs, so a mismatch says
 which stage went wrong instead of only that the answer differs.
@@ -68,17 +68,17 @@ It is the only testbench that would notice if the design were internally
 consistent and still could not control a motor.
 
 It instantiates the top level, configures it over AXI4-Lite exactly as software
-would, and closes a loop around a per-unit PMSM model integrated by forward Euler
+would and closes a loop around a per-unit PMSM model integrated by forward Euler
 in fifty sub-steps per PWM period. The plant is driven from the compare values the
-design actually applies, and the currents it produces go back in through a model
+design actually applies and the currents it produces go back in through a model
 of the 12-bit converter.
 
 Two phases:
 
 **Locked rotor.** The classic bench measurement of a current loop. Hold the
 rotor, step the torque-current reference, time the response. The exact sampled
-analysis in docs/05 predicts a 10 to 90 per cent rise of 0.913 ms, and the
-testbench asserts the measured figure is within 25 per cent of it, reports both,
+analysis in docs/05 predicts a 10 to 90 per cent rise of 0.913 ms and the
+testbench asserts the measured figure is within 25 per cent of it, reports both
 and additionally requires the steady-state error inside 0.005 per unit, no
 significant overshoot and the d axis at zero.
 
@@ -87,7 +87,7 @@ term another 0.045, neither of which the controller is told about. Both have to 
 rejected by the integrators. A sign error anywhere in the Park or inverse Park
 path passes every static test in the repository and fails this one.
 
-The rotating phase is given 22 ms to settle, and the reason is a result rather
+The rotating phase is given 16 ms to settle and the reason is a result rather
 than a fudge: the pole cancellation removes the plant pole from the reference
 response but not from the disturbance response, so rejecting the back-EMF
 proceeds at `L/R = 4 ms`. See docs/05 and
@@ -96,19 +96,19 @@ proceeds at `L/R = 4 ms`. See docs/05 and
 ## What the models are not
 
 The inverter in the closed-loop testbench is averaged over one PWM period.
-Dead time is set to zero there, and that is stated in the testbench header rather
+Dead time is set to zero there and that is stated in the testbench header rather
 than left to be discovered: an averaged plant cannot represent dead-time
 distortion faithfully because the sign of the error follows the current. The
 switching waveform, including dead time, is measured properly in `tb_pwm3ph`
 instead. Splitting it this way covers what a single switching-resolution
-closed-loop simulation would, at a fraction of the run time, and it makes each
+closed-loop simulation would, at a fraction of the run time and it makes each
 testbench say one thing.
 
 Saying which effects a model does not carry is part of the model.
 
 ## Keeping the layers honest
 
-Three mechanisms stop the three layers drifting apart, and all three run in CI.
+Three mechanisms stop the three layers drifting apart and all three run in CI.
 
 * `scripts/gen_tables.py --check` regenerates `rtl/cordic_atan_pkg.vhd` and
   `tb/machine_pkg.vhd` and fails if the committed files differ. The angle table

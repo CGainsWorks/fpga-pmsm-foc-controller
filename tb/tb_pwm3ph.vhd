@@ -10,14 +10,14 @@
 -- by a scale factor.
 --
 -- Duty.  With no dead time a leg is high for exactly 2*cmp - 1 clocks per
--- period, and not at all when cmp is zero.  The half-clock shortfall is
+-- period and not at all when cmp is zero.  The half-clock shortfall is
 -- identical on all three legs, which is what makes it a common-mode term a
 -- machine with an isolated star point cannot see.  The check is on the exact
 -- clock count rather than on an approximate duty, because a systematic half
 -- clock is exactly the sort of thing a percentage hides.
 --
 -- Dead time.  With the register set to D, a leg whose on and off intervals are
--- both longer than D loses exactly D clocks of conduction, and there are exactly
+-- both longer than D loses exactly D clocks of conduction and there are exactly
 -- two both-off intervals per period, each of exactly D clocks.  The
 -- two-transistors-on condition is checked on every clock of the run, not only at
 -- the transitions.
@@ -26,7 +26,7 @@
 -- is shorter than the dead time cannot be given that duty by any inverter: the
 -- pulse is swallowed.  The testbench pins this down as an inequality rather than
 -- an equality, because the exact loss depends on where the requested edge falls
--- against the clock, and it is the reason docs/10-limitations-and-roadmap.md
+-- against the clock and it is the reason docs/10-limitations-and-roadmap.md
 -- puts minimum-pulse handling next to dead-time compensation.
 -- -----------------------------------------------------------------------------
 
@@ -134,7 +134,7 @@ begin
 
     -- --------------------------------------------------------------------
     -- Duty, first without and then with dead time.  Measurement starts on a
-    -- strobe, which is the carrier trough, and covers exactly one period.
+    -- strobe, which is the carrier trough and covers exactly one period.
     -- --------------------------------------------------------------------
     for pass in 0 to 1 loop
 
@@ -230,7 +230,7 @@ begin
     check_int("high clocks at full modulation", high(0), 2 * C_TOP - 1, errs);
     checks := checks + 1;
 
-    -- With dead time the same request cannot be met, and the leg must lose at
+    -- With dead time the same request cannot be met and the leg must lose at
     -- least the dead time rather than silently rounding up to full conduction.
     deadtime <= to_unsigned(C_DT, G_DT_BITS);
     wait until rising_edge(clk) and sample = '1';

@@ -7,7 +7,7 @@ field does not disturb the other half of the word.
 
 Writes to read-only or unmapped addresses complete with an OKAY response and are
 ignored. A SLVERR would be more informative but processor systems commonly
-translate it into a bus fault, and a register file is not the right place to halt
+translate it into a bus fault and a register file is not the right place to halt
 a CPU from.
 
 ## Map
@@ -51,7 +51,7 @@ one clock and the bit always reads back as zero, so software cannot leave the
 design held in reset by forgetting to write the bit back.
 
 PWM_EN is an interlock and not a request. It forces both transistors of every leg
-off on the next clock, and there is no path in the dead-time inserter that can
+off on the next clock and there is no path in the dead-time inserter that can
 drive the two transistors of a leg on together.
 
 ## STATUS, 0x04
@@ -67,7 +67,7 @@ drive the two transistors of a leg on together.
 
 OVERRUN cannot happen with the design wired as intended, because the modulator
 strobes once per 5000 clocks against a datapath latency of 66. It exists so that a
-system that reconfigured PWM_TOP to something absurd, or drove the sample input
+system that reconfigured PWM_TOP to something absurd or drove the sample input
 from somewhere else, would find out rather than silently produce a corrupt
 result.
 
@@ -77,13 +77,13 @@ result.
    and QEI_WIN in any order; nothing depends on their sequence while the enable
    is low.
 2. Align the encoder. Set MANUAL, write THETA_MAN to zero, set a small ID_REF
-   with IQ_REF at zero, and enable. The rotor pulls to the d axis. Clear
+   with IQ_REF at zero and enable. The rotor pulls to the d axis. Clear
    USE_INDEX, then zero the position there.
 3. Clear MANUAL to take the angle from the encoder, set ID_REF to zero and drive
    the machine from IQ_REF.
 
 Step 2 is why the manual angle is a mode rather than a debug hook: every
-incremental encoder needs its zero found against the rotor magnets once, and
+incremental encoder needs its zero found against the rotor magnets once and
 open-loop current injection is how it is done.
 
 ## Register values for the reference machine

@@ -11,7 +11,7 @@
 -- with a_i = atan(2**-i) and s in {-1,+1}.  Each step is a rotation by a fixed
 -- angle whose sign is data dependent and a scaling by sqrt(1+4**-i) which is
 -- not, so after n steps the gain is the constant K = prod sqrt(1+4**-i) whatever
--- the data did, and one constant multiply removes it.  There is no multiplier in
+-- the data did and one constant multiply removes it.  There is no multiplier in
 -- the iteration itself: 2**-i is a wired shift.
 --
 --   rotate_mode  s = sign(z), drives z to zero, so the vector on (x_in, y_in) is
@@ -27,6 +27,14 @@
 --
 -- Interfaces are Q2.13 and BAM16 in both directions.  Each instance undoes its
 -- own gain, so K never appears in any system-level equation.
+--
+-- Every pipeline register is clock-enabled by the valid bit travelling with it,
+-- so a stage with nothing in it holds instead of shifting.  That is what a
+-- flip-flop's enable input is for and it costs nothing on an FPGA.  At one
+-- control update per 5000 clocks it is the difference between 54 stages
+-- toggling continuously and toggling for 66 clocks in 5000, which is most of
+-- the dynamic power of the block.  It also makes the design cheap to simulate,
+-- which is what lets the closed-loop testbench afford 27 ms of machine.
 -- -----------------------------------------------------------------------------
 
 library ieee;
@@ -97,7 +105,7 @@ begin
 
   begin
 
-    if rising_edge(clk) then
+    if rising_edge(clk) and in_valid = '1' then
       xi := shift_left(resize(x_in, C_W_XY), C_GUARD);
       yi := shift_left(resize(y_in, C_W_XY), C_GUARD);
 
@@ -157,7 +165,7 @@ begin
 
     begin
 
-      if rising_edge(clk) then
+      if rising_edge(clk) and vld(i) = '1' then
         if G_MODE = rotate_mode then
           neg := z(i) < 0;
         else
@@ -193,7 +201,7 @@ begin
 
   begin
 
-    if rising_edge(clk) then
+    if rising_edge(clk) and vld(C_N_STAGES) = '1' then
       if G_COMPENSATE then
         rx := round_shr(x(C_N_STAGES) * to_signed(C_KINV, C_W_KINV),
                         C_Q_KINV + C_GUARD);
@@ -219,7 +227,7 @@ begin
 
   -- ---------------------------------------------------------------------------
   -- Only the valid chain is reset.  The datapath registers are left free
-  -- running: their contents are meaningless until a valid arrives with them, and
+  -- running: their contents are meaningless until a valid arrives with them and
   -- not resetting 1200 flip-flops keeps them out of the global reset fan-out.
   -- They are given a power-up value in their declaration, which every FPGA this
   -- would target honours from the configuration bitstream, so simulation and

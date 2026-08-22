@@ -1,7 +1,7 @@
 # 5. The current loop: gains, margins and what the delay costs
 
 The gains are not tuned by hand and they are not tuned by simulation. They come
-from one design rule with one free parameter, and the free parameter is set by
+from one design rule with one free parameter and the free parameter is set by
 the sample rate. `focmodel/analysis.py` computes every number below and
 `tests/test_analysis.py` re-derives them.
 
@@ -17,7 +17,7 @@ disturbances, which is what this design does, each axis is a first-order lag:
 
     G(s) = 1 / (R + s L)
 
-with a pole at `-R/L`, that is at `-250 rad/s` for the reference machine, and a
+with a pole at `-R/L`, that is at `-250 rad/s` for the reference machine and a
 time constant of 4 ms.
 
 ## The design rule
@@ -27,7 +27,7 @@ A PI controller is
     C(s) = Kp (1 + 1/(Ti s)) = Kp (Ti s + 1) / (Ti s)
 
 Choosing `Ti = L/R` puts the controller zero exactly on the plant pole. They
-cancel, and the open loop becomes a pure integrator:
+cancel and the open loop becomes a pure integrator:
 
     L(s) = C(s) G(s) = Kp / (s L)
 
@@ -37,9 +37,9 @@ whose crossover is at `wc = Kp / L`. So
     Ki = Kp R / L        (per second)
     Ki_per_sample = Kp (R/L) Ts
 
-This is internal model control, or pole cancellation, and its virtue is that it
+This is internal model control or pole cancellation and its virtue is that it
 leaves exactly one free parameter. Everything about the machine has been absorbed
-into `Kp` and `Ti`; the only thing left to decide is how fast the loop should be,
+into `Kp` and `Ti`; the only thing left to decide is how fast the loop should be
 and that is a property of the controller and not of the motor.
 
 ## Choosing the bandwidth
@@ -47,16 +47,16 @@ and that is a property of the controller and not of the motor.
 The bandwidth is limited by the sample rate, not by the machine. The loop samples
 once per PWM period and applies its answer over the following period, so there is
 one sample of delay beyond the zero-order hold. The usual rule of thumb is
-`wc Ts <= 0.1`, and it can be justified rather than quoted.
+`wc Ts <= 0.1` and it can be justified rather than quoted.
 
 With the cancellation in place the sampled open loop is
 
     L(z) = a / (z**d (z - 1)),     a = (Kp + Ki)(1 - p) / R_pu,  p = exp(-Ts R/L)
 
 For `d = 0` the closed loop is `z - 1 + a`, stable for `0 < a < 2`. For `d = 1` it
-is `z² - z + a`, and the Jury conditions give `0 < a < 1`. **One sample of delay
+is `z² - z + a` and the Jury conditions give `0 < a < 1`. **One sample of delay
 halves the gain the loop can carry.** At the design point `a = 0.1006`, a tenth of
-the delayed limit, and the margins that buys are:
+the delayed limit and the margins that buys are:
 
 | | Value |
 | --- | --- |
@@ -87,7 +87,7 @@ asserts.
 
 ## Predicted and measured response
 
-Three numbers for the same step, and they should be quoted together because the
+Three numbers for the same step and they should be quoted together because the
 difference between them is the point.
 
 | | 10 to 90 per cent rise |
@@ -100,7 +100,7 @@ difference between them is the point.
 The continuous figure is the design intent. The sampled figure is what the same
 gains actually give once the zero-order hold and the computation delay are
 included: the delay moves the dominant pole from 0.8994 to 0.8865 and adds a
-second, fast pole at 0.1135, and the net effect on the rise is to shorten it.
+second, fast pole at 0.1135 and the net effect on the rise is to shorten it.
 That is worth stating plainly, because the instinct is that delay slows a loop
 down. It does not slow this one down; it takes away margin and it halves the gain
 the loop could carry. The bit-accurate figure sits between the two and is
@@ -115,13 +115,13 @@ quantised to the 50 us sample grid, so 0.950 ms is the grid point next to 0.913.
 
 The arithmetic contributes **one hundredth** of the delay. That is the argument
 for putting the loop in fabric stated as a number: a software implementation
-taking 10 us would add 1.1 degrees, which is still small, but it would add it
-with jitter, and jitter is not something a phase margin can absorb. What is left
+taking 10 us would add 1.1 degrees, which is still small but it would add it
+with jitter and jitter is not something a phase margin can absorb. What is left
 is set by the modulator and is the same for any implementation.
 
 ## Anti-windup
 
-While the output is against its limit the loop is open, and an integrator that
+While the output is against its limit the loop is open and an integrator that
 keeps accumulating during that time has to be unwound again before the output can
 come off the limit. On a drive that shows up as a long overshoot after every hard
 acceleration.
@@ -129,7 +129,7 @@ acceleration.
 The design uses conditional integration: if the unsaturated output exceeds the
 limit and the error has the same sign, the integrator update is skipped. The
 state cannot grow in the direction that is already saturated, so recovery is
-immediate, and the proportional term alone takes the output off the limit on the
+immediate and the proportional term alone takes the output off the limit on the
 sample after the error reverses. It costs one comparison.
 
 The state is additionally clamped to `±V_max` in its own format, so that a change
@@ -151,8 +151,8 @@ which is five times slower than the loop follows a reference step.
 This is visible in simulation and it is asserted, not hand-waved:
 `tests/test_analysis.py::test_disturbance_rejection_runs_at_the_open_loop_time_constant`
 shows the current still 16 per cent short of target after four reference rise
-times, and settled after three electrical time constants. `tb_foc_closed_loop`
-gives its rotating phase 22 ms to settle for the same reason.
+times and settled after three electrical time constants. `tb_foc_closed_loop`
+gives its rotating phase 16 ms to settle for the same reason.
 
 It is also exactly why production drives add back-EMF and cross-coupling
 feedforward:
@@ -161,7 +161,7 @@ feedforward:
     v_q_ff = +w (L_d i_d + psi_f)
 
 Those two terms cancel the disturbance at its source rather than waiting for the
-integrator to find it, and they turn a 4 ms rejection into a rejection limited
+integrator to find it and they turn a 4 ms rejection into a rejection limited
 only by how well `psi_f` and `L` are known. It is not implemented here, it needs
-three multipliers and two more registers, and it is the first item in
+three multipliers and two more registers and it is the first item in
 docs/10-limitations-and-roadmap.md.

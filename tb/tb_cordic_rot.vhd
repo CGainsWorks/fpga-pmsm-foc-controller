@@ -5,7 +5,7 @@
 --
 -- Against the model.  Every output must equal the value focmodel produced for
 -- the same input, exactly.  This is the check that catches an off-by-one in a
--- shift or a rounding term, and it is worth nothing if it is given a tolerance.
+-- shift or a rounding term and it is worth nothing if it is given a tolerance.
 --
 -- Against the mathematics.  Every output is also compared with the true rotation
 -- computed in floating point by ieee.math_real, within the bound derived in

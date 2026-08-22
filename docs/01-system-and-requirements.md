@@ -1,27 +1,27 @@
-# 1. What this is, and the machine it is sized for
+# 1. What this is and the machine it is sized for
 
 ## The problem
 
 A permanent-magnet synchronous motor produces torque in proportion to the
-component of stator current that is perpendicular to the rotor flux, and produces
+component of stator current that is perpendicular to the rotor flux and produces
 none at all from the component parallel to it. Field-oriented control is the
 arrangement that measures the phase currents, rotates them into a frame that
-turns with the rotor, regulates the two components separately, and rotates the
+turns with the rotor, regulates the two components separately and rotates the
 answer back out again to drive the inverter. Doing that turns a three-phase
 machine into something that behaves like a DC motor: torque follows one number,
-flux follows another, and both are regulated by ordinary linear controllers.
+flux follows another and both are regulated by ordinary linear controllers.
 
 The arithmetic is not hard. Two rotations, one three-to-two phase map, two PI
 controllers and a modulator. What is hard is doing it **on time, every time**.
 The current loop has to close once per PWM period, at exactly the same point in
 that period, for the lifetime of the drive. A microcontroller can do the
-arithmetic in a few microseconds, but the instant it samples and the instant it
+arithmetic in a few microseconds but the instant it samples and the instant it
 updates are both at the mercy of interrupt latency, cache behaviour and whatever
 else the firmware is doing. Jitter in those instants is indistinguishable, to the
 control loop, from noise on the current measurement.
 
 This repository puts the whole loop in fabric. The modulator issues its own
-sample strobe at the carrier trough, the datapath answers 66 clocks later, and
+sample strobe at the carrier trough, the datapath answers 66 clocks later and
 the modulator takes the answer at the next trough. There is no software in the
 loop, no interrupt and no scheduler, so the control period is the PWM period
 exactly and the jitter is zero by construction.
@@ -52,7 +52,7 @@ protection trip possible later without re-architecting anything.
 Every number in this repository is checkable against one concrete machine. It is
 a 48 V surface-mount PMSM of the size used in an AGV wheel drive or a small
 collaborative-robot joint. The RTL itself carries no machine constants: they all
-arrive through registers, and the reference machine exists so that the
+arrive through registers and the reference machine exists so that the
 documentation can quote real figures rather than symbols.
 
 | Quantity | Symbol | Value |
@@ -82,7 +82,7 @@ That choice is not cosmetic. The linear modulation limit of space-vector PWM is 
 peak phase voltage of V_dc/sqrt(3), so in these units the voltage limit is
 **exactly 1.0 per unit**. The saturation limit in the controller, the clamp in
 the voltage limiter and the point at which the modulator raises its
-over-modulation flag are then all the same number, and none of them needs a
+over-modulation flag are then all the same number and none of them needs a
 scaling constant to be told what it is.
 
 The machine equation keeps its shape under this normalisation:
@@ -121,6 +121,6 @@ interlock beyond forcing the gates off on reset and on the enable bit. Those
 belong in the power stage and in a separate protection path.
 
 It has also never been on an FPGA or on a motor. Everything in this repository is
-verified in simulation against models that are documented here, and
+verified in simulation against models that are documented here and
 docs/10-limitations-and-roadmap.md sets out exactly which claims that leaves
 unmade.

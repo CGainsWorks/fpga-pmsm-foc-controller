@@ -5,14 +5,14 @@
 -- assignments in docs/08-register-map.md.
 --
 -- The handshaking is the minimal form that is still legal: a channel's ready may
--- depend combinationally on that channel's valid, and only the reverse would
+-- depend combinationally on that channel's valid and only the reverse would
 -- deadlock, so awready and wready are asserted together when a write can be
 -- accepted and arready when a read can.  At most one write response and one read
 -- response are outstanding, which is all AXI4-Lite ever needs and removes every
 -- ordering question a deeper slave would have to answer.
 --
 -- Write strobes are honoured per byte.  A processor writing a 16-bit field with
--- a halfword store must not clear the other half of the word, and software will
+-- a halfword store must not clear the other half of the word and software will
 -- eventually do exactly that.
 --
 -- Everything the control loop reads from here crosses no clock domain: the
@@ -258,7 +258,7 @@ begin
 
               -- Writes to read-only or unmapped addresses complete with OKAY.
               -- A SLVERR would be more informative but AXI4-Lite masters in
-              -- processor systems commonly treat it as a bus fault, and a
+              -- processor systems commonly treat it as a bus fault and a
               -- register file is not the right place to halt a CPU from.
               null;
 

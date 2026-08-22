@@ -1,15 +1,15 @@
 -- -----------------------------------------------------------------------------
 -- tb_clarke
 --
--- The Clarke transform against the model, exactly, and against real arithmetic
+-- The Clarke transform against the model, exactly and against real arithmetic
 -- within one LSB.  The vector set includes a full electrical turn of a balanced
--- one per unit set, which is what the block sees in service, and random pairs
+-- one per unit set, which is what the block sees in service and random pairs
 -- well outside the balanced set, which is what it sees during a fault.
 --
 -- The comparison against real arithmetic uses the full Clarke expression, so a
 -- wrong scaling factor fails it: the amplitude-invariant 2/3 is what puts a
 -- balanced set of peak amplitude A on a space vector of magnitude A rather than
--- 1.5 A, and every per-unit limit downstream depends on that being right.
+-- 1.5 A and every per-unit limit downstream depends on that being right.
 -- -----------------------------------------------------------------------------
 
 library ieee;
@@ -151,7 +151,7 @@ begin
       check_int("ibeta", to_integer(ibeta), ebe, errs);
       check_int("sat", to_int(sat_out), est, errs);
 
-      -- Against real arithmetic, but only where the true value is inside the
+      -- Against real arithmetic but only where the true value is inside the
       -- output format; outside it the block is required to saturate and there
       -- is nothing to compare with.
       beta := (real(a) + 2.0 * real(b)) / sqrt(3.0);

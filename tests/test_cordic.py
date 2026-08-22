@@ -1,4 +1,4 @@
-"""Properties of the CORDIC, and the error budget the testbenches rely on.
+"""Properties of the CORDIC and the error budget the testbenches rely on.
 
 The bound checked here is the same one tb/tb_cordic_rot.vhd checks against the
 RTL.  Having it in both places is deliberate: this test says the algorithm meets
@@ -50,7 +50,7 @@ def test_every_step_is_reachable_from_the_ones_after_it() -> None:
 def test_residual_is_below_the_input_angle_resolution() -> None:
     """The unresolved angle must be smaller than one LSB of the angle input.
 
-    Otherwise the stage count, and not the interface, would be what limits the
+    Otherwise the stage count and not the interface, would be what limits the
     accuracy of the transform.
     """
     residual = math.atan(2.0 ** -(P.N_STAGES - 1))
@@ -94,7 +94,7 @@ def test_rotation_of_the_axes_is_exact() -> None:
 
 
 def test_rotation_preserves_length() -> None:
-    """A rotation is an isometry, and the compensated output must show it."""
+    """A rotation is an isometry and the compensated output must show it."""
     rng = random.Random(11)
     for _ in range(500):
         xi = rng.randint(-SCALE, SCALE)

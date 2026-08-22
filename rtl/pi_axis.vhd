@@ -11,7 +11,7 @@
 --
 -- The integrator uses the current error, so it is a backward-Euler integrator
 -- and its zero sits at z = Kp/(Kp+Ki).  That is the discrete image of the
--- continuous zero at s = -R/L which cancels the plant pole, and at the reference
+-- continuous zero at s = -R/L which cancels the plant pole and at the reference
 -- tuning the two land within 6e-5 of each other.
 --
 -- Two things here are not cosmetic.
@@ -25,7 +25,7 @@
 -- is the most common way a fixed-point PI is got wrong.
 --
 -- The anti-windup is conditional integration rather than a clamp on the state
--- alone.  While the actuator is saturated the loop is open, and an integrator
+-- alone.  While the actuator is saturated the loop is open and an integrator
 -- that keeps accumulating during that time has to be unwound again before the
 -- output can come off the limit, which shows up as a long overshoot after every
 -- large transient.  Freezing costs one comparison and removes the effect
@@ -83,7 +83,7 @@ begin
 
   begin
 
-    if rising_edge(clk) then
+    if rising_edge(clk) and in_valid = '1' then
       e    := resize(ref, C_W_DATA + 1) - resize(meas, C_W_DATA + 1);
       e_r  <= sat_to(e, C_W_DATA);
       p_r  <= round_shr(kp * sat_to(e, C_W_DATA), C_Q_KP);

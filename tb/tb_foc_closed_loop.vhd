@@ -22,7 +22,7 @@
 -- the design actually applies.  Dead time is set to zero for this test: the
 -- dead-time distortion belongs to the power stage rather than to the controller,
 -- an averaged plant cannot represent it faithfully because its sign follows the
--- current, and the switching waveform including dead time is measured properly
+-- current and the switching waveform including dead time is measured properly
 -- in tb_pwm3ph.  Saying which effects a model does not carry is part of the
 -- model.
 --
@@ -30,15 +30,15 @@
 -- hold the rotor, step the torque-current reference and time the response.  The
 -- continuous design predicts a 10 to 90 per cent rise of 1.10 ms; the exact
 -- sampled analysis of the same gains, including the one-sample computation
--- delay, predicts 0.91 ms, and that is the figure this testbench checks against.
+-- delay, predicts 0.91 ms and that is the figure this testbench checks against.
 --
 -- Phase two, turning at 500 rpm.  The back-EMF is 0.15 per unit and the
 -- cross-coupling term another 0.045, neither of which the controller is told
--- about.  Both are rejected, and the test is that the q-axis current still
+-- about.  Both are rejected and the test is that the q-axis current still
 -- reaches its reference and the d-axis still sits at zero: a sign error anywhere
 -- in the Park or inverse Park path passes every static test and fails this one.
 --
--- Phase two is deliberately given 22 ms to settle, and the reason is worth
+-- Phase two is deliberately given 16 ms to settle and the reason is worth
 -- stating because it is a property of the tuning and not of this testbench.
 -- Placing the PI zero on the plant pole cancels that pole from the reference
 -- response, which is what buys the 0.91 ms rise.  It does not cancel it from the
@@ -64,13 +64,24 @@ end entity tb_foc_closed_loop;
 
 architecture sim of tb_foc_closed_loop is
 
-  constant C_PERIOD   : time    := 10 ns;
+  -- The carrier here is 250 steps on a 10 MHz clock rather than 2500 on 100 MHz.
+  -- That is deliberate and it changes nothing this testbench is about: the
+  -- control period is still 2 * top * T_clk = 50 us, the gains are per sample so
+  -- they are unchanged, the machine is unchanged and the predicted response is
+  -- unchanged.  What drops is the modulator resolution, from 2500 steps to 250,
+  -- and focmodel puts the resulting change in settled current below 1e-4 per
+  -- unit, twenty times under the tolerance asserted below.  What is bought is a
+  -- tenfold cut in the number of clock edges to simulate, which is what makes 34
+  -- ms of machine affordable in CI.  The modulator's own timing is checked at
+  -- the real 100 MHz and 2500 ratio in tb_pwm3ph, where it belongs.
+  constant C_PERIOD   : time    := 100 ns;
+  constant C_TOP      : natural := 250;
   constant C_PWM_BITS : natural := 13;
   constant C_ADDR_W   : natural := 8;
   constant C_SUB      : natural := 50;
   constant C_STEP_AT  : natural := 20; -- periods, phase one
   constant C_RUN1     : natural := 220;
-  constant C_RUN2     : natural := 450;
+  constant C_RUN2     : natural := 320;
   constant C_TAIL     : natural := 20; -- periods averaged
   constant C_RPM      : real    := 500.0;
 
@@ -263,6 +274,12 @@ begin
 
   begin
 
+    -- The carrier and the clock have to give the control period the gains were
+    -- derived for.  Otherwise every prediction below is about a different loop.
+    assert (2 * C_TOP * C_PERIOD) / 1 ns = integer(C_TS * 1.0e9)
+      report "tb_foc_closed_loop: carrier and clock do not give a 50 us period"
+      severity failure;
+
     dt := C_TS / real(C_SUB);
     wait until aresetn = '1';
     wait until rising_edge(clk);
@@ -286,7 +303,7 @@ begin
       -- depends on the order the registers are written in.
       -- ------------------------------------------------------------------
       axi_write(C_A_CTRL, 0);
-      axi_write(C_A_PWM_TOP, C_PWM_TOP);
+      axi_write(C_A_PWM_TOP, C_TOP);
       axi_write(C_A_DEADTIME, 0);
       axi_write(C_A_KP, C_KP_Q);
       axi_write(C_A_KI, C_KI_Q);
@@ -321,9 +338,9 @@ begin
 
         -- The compare values being loaded into the modulator on this very strobe
         -- are the ones applied over the period that starts here.
-        da := real(to_integer(duty_a)) / real(C_PWM_TOP);
-        db := real(to_integer(duty_b)) / real(C_PWM_TOP);
-        dc := real(to_integer(duty_c)) / real(C_PWM_TOP);
+        da := real(to_integer(duty_a)) / real(C_TOP);
+        db := real(to_integer(duty_b)) / real(C_TOP);
+        dc := real(to_integer(duty_c)) / real(C_TOP);
 
         -- Duty to per-unit stationary-frame voltage.  The half-rail offsets
         -- cancel in the Clarke combination, which is another way of saying that

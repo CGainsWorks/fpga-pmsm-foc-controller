@@ -19,7 +19,7 @@
 -- centres the three references in the rail.  This is not an approximation to
 -- space-vector modulation, it is the same modulator: centring the references is
 -- what splitting the zero-vector time equally between V0 and V7 does to the duty
--- cycles, and the two computations agree exactly.  What it costs is three
+-- cycles and the two computations agree exactly.  What it costs is three
 -- comparators instead of a sector decode, two dwell-time multiplies and a
 -- per-sector duty table.
 --
@@ -27,7 +27,7 @@
 -- amplitude A needs a duty excursion of A/sqrt(3) about the half-rail, so the
 -- linear range ends at A = sqrt(3)/2 = 0.866.  With it the peak of v + v_off is
 -- (sqrt(3)/2) A, so the excursion is A/2 and the linear range ends at A = 1.
--- That is a factor 2/sqrt(3) = 1.1547, or 15.47 per cent more fundamental
+-- That is a factor 2/sqrt(3) = 1.1547 or 15.47 per cent more fundamental
 -- voltage from the same DC link, which on a motor drive is 15.47 per cent more
 -- speed before field weakening starts and roughly 13 per cent lower conduction
 -- loss at a given power.
@@ -99,7 +99,7 @@ begin
 
   begin
 
-    if rising_edge(clk) then
+    if rising_edge(clk) and in_valid = '1' then
       prod := vbeta * to_signed(C_SQRT3_2, 16);
       half := shift_left(resize(-valpha, C_W_DATA + 16), C_Q_TRIG - 1);
 
@@ -141,7 +141,7 @@ begin
 
   begin
 
-    if rising_edge(clk) then
+    if rising_edge(clk) and vld1 = '1' then
       tops := signed(resize(top_r, G_PWM_BITS + 1));
       ovf  := '0';
 

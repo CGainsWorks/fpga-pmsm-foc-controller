@@ -84,8 +84,8 @@ def test_internal_format_cannot_overflow() -> None:
     """No pair of representable inputs can overflow the CORDIC datapath.
 
     The largest vector the input format can present is (max, max), of magnitude
-    sqrt(2) * 4 per unit, and the algorithm multiplies magnitude by at most K.
-    The internal format has to hold the result, and this is the calculation that
+    sqrt(2) * 4 per unit and the algorithm multiplies magnitude by at most K.
+    The internal format has to hold the result and this is the calculation that
     fixed C_W_XY at 24 bits.
     """
     max_in = (2 ** (P.W_DATA - 1) - 1) / float(1 << P.Q_DATA)

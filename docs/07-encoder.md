@@ -14,11 +14,11 @@ synchroniser failures is
 where `t_r` is the settling time allowed, one clock period here. For a 28 nm
 device the metastability time constant `tau` is of the order of 20 ps and the
 aperture `T0` of the order of 10 fs. One clock of 10 ns is then about 500 time
-constants, and `exp(500)` puts the answer so far beyond any interesting horizon
+constants and `exp(500)` puts the answer so far beyond any interesting horizon
 that the calculation stops being informative.
 
 Two of those numbers are typical values from device literature rather than
-measurements on a specific part, and they are quoted as such. The conclusion,
+measurements on a specific part and they are quoted as such. The conclusion,
 that two stages are ample at 100 MHz and a third is free, does not depend on
 either of them being right to better than an order of magnitude.
 
@@ -39,7 +39,7 @@ which covers the reflections and the coupled switching noise a motor cable
 carries alongside the encoder pair.
 
 If the maximum speed or the line count rose by an order of magnitude the filter
-would have to shrink, and the calculation above is where that would be noticed.
+would have to shrink and the calculation above is where that would be noticed.
 
 ## Decoding
 
@@ -54,13 +54,13 @@ state machine is needed.
 
 Both channels changing between two filtered samples is not a valid transition. It
 means either that the encoder is turning faster than the filter can follow or
-that a line is broken, and in both cases the position is no longer trustworthy.
-The decoder raises a sticky error bit rather than guessing a direction, and the
+that a line is broken and in both cases the position is no longer trustworthy.
+The decoder raises a sticky error bit rather than guessing a direction and the
 bit stays set until software clears it.
 
 ## Position and angle
 
-The position counter is modulo the counts per mechanical revolution, and the
+The position counter is modulo the counts per mechanical revolution and the
 index pulse zeroes it when the index is enabled.
 
 The electrical angle is
@@ -80,7 +80,7 @@ which for a position of up to `cpr` counts is at most
 
 and, crucially, **it does not accumulate**, because `pos` itself is exact. An
 implementation that added a fixed angle increment per count instead would need no
-multiplier but would drift by that amount every revolution, and would depend on
+multiplier but would drift by that amount every revolution and would depend on
 an index pulse to stay correct.
 
 `tb_qei_decoder` configures 1024 counts per revolution and one pole pair, which
@@ -96,7 +96,7 @@ slows:
     error = 1 / (counts in the window) = 1 / (cpr × n × T_win)
 
 At 10000 counts per revolution with a 1 ms window, one count is 6 rpm. That is
-0.2 per cent at 3000 rpm and 20 per cent at 30 rpm, and below about 6 rpm the
+0.2 per cent at 3000 rpm and 20 per cent at 30 rpm and below about 6 rpm the
 estimate is zero most windows and one count occasionally.
 
 The fix is the T method, timing a whole number of counts rather than counting in

@@ -9,7 +9,7 @@ name: ci
 #
 # What it does not do is put the design on an FPGA.  No timing closure figure,
 # no resource count from a vendor tool and no measurement on a motor appears
-# anywhere, and docs/10-limitations-and-roadmap.md says so in the same words.
+# anywhere and docs/10-limitations-and-roadmap.md says so in the same words.
 # The synthesis job below elaborates the design through GHDL's synthesiser,
 # which catches a construct that simulates and cannot be built; it is not a
 # place-and-route and it makes no timing claim.

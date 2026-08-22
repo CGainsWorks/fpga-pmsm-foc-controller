@@ -15,7 +15,7 @@ zero on the plant pole, ``Ti = L / R``, cancels it and leaves
     L(s) = Kp / (s L)      so      wc = Kp / L
 
 which fixes ``Kp = wc L`` and ``Ki = Kp R / L``.  There is exactly one free
-parameter left, the bandwidth, and it is set by the sample rate rather than by
+parameter left, the bandwidth and it is set by the sample rate rather than by
 the machine.
 
 Discrete check
@@ -89,7 +89,7 @@ def step_response(delay_samples: int = 1, n: int = 4000) -> list[float]:
     from its difference equation directly.  This is used rather than the
     dominant pole because for one sample of delay the second pole is not
     negligible: it is slow enough to hold the first ten per cent of the rise
-    back, and quoting the dominant pole alone would predict a rise time about
+    back and quoting the dominant pole alone would predict a rise time about
     four per cent shorter than the loop actually gives.
     """
     kp, ki = quantised_gains()

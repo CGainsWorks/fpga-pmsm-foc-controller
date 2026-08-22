@@ -1,7 +1,7 @@
 """Word lengths, fixed-point formats and the reference machine.
 
 Nothing in this file is a free choice: every number is derived in the document
-named beside it, and ``tests/test_error_budget.py`` re-derives the important ones
+named beside it and ``tests/test_error_budget.py`` re-derives the important ones
 from first principles so that a hand edit here fails the test suite.
 """
 

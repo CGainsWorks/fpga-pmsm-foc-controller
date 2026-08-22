@@ -3,7 +3,7 @@
 
 The table could be built inside VHDL with ieee.math_real at elaboration time.
 It is generated here instead for two reasons: synthesis support for real
-arithmetic in constant functions is uneven across vendors, and generating it
+arithmetic in constant functions is uneven across vendors and generating it
 makes the table reviewable in the diff of any change to the word lengths.  CI
 regenerates the file and fails if it differs from the committed one, so the two
 cannot drift apart.
@@ -37,7 +37,7 @@ HEADER = """\
 --
 --     atan(2**-i) <= sum_{{j>i}} atan(2**-j) + atan(2**-(n-1))
 --
--- which the binary angle set satisfies for every i, and the total reach is
+-- which the binary angle set satisfies for every i and the total reach is
 --
 --     sum_{{i=0}}^{{{last}}} atan(2**-i) = {total} counts = {total_rad:.6f} rad
 --

@@ -6,20 +6,20 @@
 --
 -- The only sequencing in the whole design lives here and it is one signal.  The
 -- modulator issues its sample strobe at the carrier trough; that strobe latches
--- the two phase currents and the rotor angle, starts the current loop, and 66
+-- the two phase currents and the rotor angle, starts the current loop and 66
 -- clocks later the loop hands three compare values back to the modulator, which
 -- takes them at the next trough.  There is no scheduler, no interrupt and no
--- software in the loop, and the control period is therefore exactly the PWM
+-- software in the loop and the control period is therefore exactly the PWM
 -- period with no jitter of any kind.  That is the part a microcontroller
 -- implementation cannot match: not the arithmetic, which any Cortex-M4 with an
--- FPU will do in a few microseconds, but the determinism.
+-- FPU will do in a few microseconds but the determinism.
 --
--- Safety.  Reset and the pwm_enable bit both force all six gate signals low, and
+-- Safety.  Reset and the pwm_enable bit both force all six gate signals low and
 -- the dead-time inserter has no path that can drive the two transistors of a leg
 -- on together.  That is the whole extent of the protection here: this is a
 -- control block, not a safety function.  Desaturation detection, overcurrent
 -- trip, gate-supply monitoring and the interlocks a real drive needs live
--- outside it, and README.md says so plainly.
+-- outside it and README.md says so plainly.
 -- -----------------------------------------------------------------------------
 
 library ieee;
@@ -72,7 +72,7 @@ entity foc_top is
 
     -- Telemetry.  The compare values on their way into the modulator, valid
     -- from the strobe that loads them.  A drive that logs its own duty cycles
-    -- can diagnose a modulation fault without an oscilloscope, and the
+    -- can diagnose a modulation fault without an oscilloscope and the
     -- closed-loop testbench drives its machine model from these rather than
     -- from the gate waveform, which keeps the plant model exact and leaves the
     -- waveform itself to tb_pwm3ph.
@@ -123,8 +123,8 @@ architecture rtl of foc_top is
   signal vd_i      : signed(C_W_DATA - 1 downto 0);
   signal vq_i      : signed(C_W_DATA - 1 downto 0);
 
-  signal ia_s : signed(C_W_DATA - 1 downto 0);
-  signal ib_s : signed(C_W_DATA - 1 downto 0);
+  signal ia_s : signed(C_W_DATA - 1 downto 0) := (others => '0');
+  signal ib_s : signed(C_W_DATA - 1 downto 0) := (others => '0');
 
 begin
 

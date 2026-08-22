@@ -15,7 +15,7 @@
 -- One control update is in flight at a time, which is what the design assumes
 -- and what the hardware does: the modulator strobes once per PWM period, 2500
 -- clocks apart, against a loop latency of 66.  The testbench holds to that,
--- waiting for each result before presenting the next sample, and the overrun
+-- waiting for each result before presenting the next sample and the overrun
 -- flag in the status word is what would catch a system that did not.
 -- -----------------------------------------------------------------------------
 

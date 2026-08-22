@@ -1,9 +1,9 @@
-# 6. The modulator: why min-max is space-vector PWM, and what it buys
+# 6. The modulator: why min-max is space-vector PWM and what it buys
 
 ## The problem
 
 The controller produces a voltage vector. The inverter can produce eight
-switching states: six active vectors 60 degrees apart on a hexagon, and two zero
+switching states: six active vectors 60 degrees apart on a hexagon and two zero
 vectors with all three legs on the same rail. Modulation is the business of
 producing the wanted vector on average over one switching period from those
 eight.
@@ -11,7 +11,7 @@ eight.
 ## What the linear range is
 
 The six active vectors have magnitude `2 V_dc / 3` in the amplitude-invariant
-convention, and they are the corners of a hexagon. Any vector inside the hexagon
+convention and they are the corners of a hexagon. Any vector inside the hexagon
 can be synthesised. But a **rotating** vector of constant magnitude must fit
 inside the hexagon at every angle, so the usable magnitude is the radius of the
 inscribed circle, which touches the mid-point of each edge:
@@ -28,14 +28,14 @@ when the peak phase voltage reaches `V_dc/2`, that is `0.866` per unit. The rati
     (V_dc/sqrt3) / (V_dc/2) = 2/sqrt(3) = 1.1547
 
 is the well-known **15.47 per cent** of extra fundamental voltage. On a motor
-drive that is 15.47 per cent more speed before field weakening has to start, and
+drive that is 15.47 per cent more speed before field weakening has to start and
 at a given power roughly 13 per cent less current and so about 25 per cent less
 conduction loss.
 
 ## Getting it without a sector decode
 
 The textbook implementation decodes which of the six sectors the vector is in,
-computes two dwell times `T1` and `T2` from a pair of trigonometric expressions,
+computes two dwell times `T1` and `T2` from a pair of trigonometric expressions
 and splits the remainder between the two zero vectors. That is a sector
 comparison, two multiplies and a per-sector duty table.
 
@@ -55,7 +55,7 @@ Spend it on centring. With
     v_off = -(max(v_a, v_b, v_c) + min(v_a, v_b, v_c)) / 2
 
 the three shifted references become symmetric about zero, so the largest and the
-smallest are equal and opposite, and the whole set is centred in the available
+smallest are equal and opposite and the whole set is centred in the available
 rail. Centring the references is exactly what splitting the zero-vector time
 equally between V0 and V7 does to the duty cycles, so this produces the same
 duties as symmetric space-vector PWM. It costs three comparators, an adder and a
@@ -88,14 +88,14 @@ A leg is high while `cnt < cmp`. Counting the states of one period, the counter
 takes the values `1..top` on the rising ramp and `top-1..0` on the falling one, so
 the high time is
 
-    2 cmp - 1  clocks for cmp >= 1, and 0 for cmp = 0
+    2 cmp - 1  clocks for cmp >= 1 and 0 for cmp = 0
 
 The half-clock shortfall is **identical on all three legs**, so it is a
 common-mode term: it cancels in every line-to-line voltage and a machine with an
-isolated star point cannot see it. Its size is one part in 5000, or 9.6 mV on a
-48 V link, and it would be invisible even if it were not common mode. It is worth
+isolated star point cannot see it. Its size is one part in 5000 or 9.6 mV on a
+48 V link and it would be invisible even if it were not common mode. It is worth
 writing down because a modulator that was out by half a clock **differentially**
-would be a real fault, and knowing which of the two you have requires having done
+would be a real fault and knowing which of the two you have requires having done
 the count.
 
 `tb_pwm3ph` measures the high time in clocks and compares it against `2 cmp - 1`
@@ -116,7 +116,7 @@ current at the trough is equal to the **mean** current over the period. The
 switching ripple is not filtered out; it is not sampled in the first place.
 
 This is why no anti-alias filter appears anywhere in the design. A filter would
-have solved the same problem by adding phase lag to the measurement, and phase
+have solved the same problem by adding phase lag to the measurement and phase
 lag in the feedback path is precisely what a current loop cannot afford.
 
 ## Update timing
@@ -149,13 +149,13 @@ The cost of that generosity is measurable:
 
 against a duty quantisation of `V_dc / top = 19.2 mV`. The dead-time distortion is
 **fifty times larger than the PWM resolution**, which settles the question of
-where the next improvement is: not more carrier bits, but dead-time compensation.
+where the next improvement is: not more carrier bits but dead-time compensation.
 That is why it is the first power-stage item in
 docs/10-limitations-and-roadmap.md and why the closed-loop testbench runs with
 dead time set to zero and says so.
 
 `tb_pwm3ph` measures the both-off interval in clocks, checks there are exactly two
-per period, and checks on every clock of the run that the two transistors of a leg
+per period and checks on every clock of the run that the two transistors of a leg
 are never on together.
 
 ### Narrow pulses

@@ -8,7 +8,7 @@ tolerance would hide exactly the class of defect these vectors exist to catch,
 an off-by-one in a shift or a rounding term.
 
 The only place a tolerance appears anywhere in this repository is where the RTL
-is compared against real arithmetic rather than against the model, and there the
+is compared against real arithmetic rather than against the model and there the
 bound is derived in docs/03-cordic.md before it is measured.
 
 File format: '#' starts a comment line, data lines are whitespace-separated
@@ -116,7 +116,7 @@ def gen_svm(out: pathlib.Path, n: int, rng: random.Random) -> None:
                "valpha vbeta | cmp_a cmp_b cmp_c over") as f:
         f.write(f"{P.PWM_TOP}\n")
         cases = [(0, 0)]
-        # Balanced sets at the linear limit and beyond it, and a full turn at
+        # Balanced sets at the linear limit and beyond it and a full turn at
         # half amplitude, which is where the duty symmetry is easiest to see.
         for amp in (0.5, 1.0, 1.1):
             for k in range(0, 360, 3):

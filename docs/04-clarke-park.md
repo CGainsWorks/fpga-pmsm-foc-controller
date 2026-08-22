@@ -27,15 +27,15 @@ magnitude exactly `A`. Substituting `i_a = A cos θ`, `i_b = A cos(θ - 2π/3)`,
 
 so `|i| = A`. This is the amplitude-invariant convention.
 
-With `c = sqrt(2/3)` the transform is orthonormal and power is invariant, but a
+With `c = sqrt(2/3)` the transform is orthonormal and power is invariant but a
 balanced set of peak `A` gives a vector of magnitude `sqrt(3/2) A = 1.225 A`.
 
 This design uses `2/3`. The reason is that **every limit in the system is stated
 as a space-vector magnitude**: the current limit, the voltage limit, the
 modulation limit. With the amplitude-invariant scaling, "one per unit" means the
-same thing on the phase currents, on the space vector and at the modulator, and
+same thing on the phase currents, on the space vector and at the modulator and
 no conversion factor appears anywhere. With the power-invariant scaling every one
-of those limits would need a `sqrt(3/2)` on it, and one of them would eventually
+of those limits would need a `sqrt(3/2)` on it and one of them would eventually
 be missed. `tests/test_foc.py::test_clarke_is_amplitude_invariant` holds the
 implementation to it.
 
@@ -56,7 +56,7 @@ which is one multiply and one add. `i_alpha` needs no arithmetic at all.
 
 The saving is not the multiplier. It is a current sensor, a shunt or Hall device,
 an amplifier and an ADC channel, per drive, per unit shipped. On a product built
-in thousands that is real money, and it is the sort of thing that decides whether
+in thousands that is real money and it is the sort of thing that decides whether
 a control block is used. The trade is that a broken phase or a leaking neutral is
 no longer detectable from the currents alone, which is a protection question and
 belongs in the power stage.
@@ -104,10 +104,10 @@ reference used throughout.
 
 Park is `rtl/cordic.vhd` in rotation mode with `-θ` on the angle input. Negating
 a binary angular measure is a plain two's-complement negate with the overflow
-discarded, and it is exact at every value including the end point, because
+discarded and it is exact at every value including the end point, because
 `-(-π)` gives `-π` and that is the same angle as `+π`.
 
-The inverse Park is the same entity with `+θ`, and in this design it is folded
+The inverse Park is the same entity with `+θ` and in this design it is folded
 into the voltage limiter: see docs/05.
 
 ### The angle must be the same angle

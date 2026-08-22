@@ -63,7 +63,7 @@ package foc_pkg is
   -- Arithmetic primitives -----------------------------------------------------
 
   -- Arithmetic right shift with round-half-up.  One adder; error in
-  -- (-0.5, +0.5] LSB instead of the [-1, 0] LSB of plain truncation, and
+  -- (-0.5, +0.5] LSB instead of the [-1, 0] LSB of plain truncation and
   -- unbiased, which matters wherever the result reaches an integrator.
 
   function round_shr (v : signed; s : natural) return signed;

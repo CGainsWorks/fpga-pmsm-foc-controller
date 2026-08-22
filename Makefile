@@ -23,7 +23,7 @@ WORKDIR ?= sim/build
 GHDL_FLAGS = --std=$(STD) --workdir=$(WORKDIR) -frelaxed
 
 # Errors accumulate and the testbench decides at the end, so simulation must not
-# stop on the first one.  Only a failure severity stops a run, and the only place
+# stop on the first one.  Only a failure severity stops a run and the only place
 # that is raised is tb_pkg.finish_report.
 GHDL_RUN = --assert-level=failure
 
@@ -76,7 +76,7 @@ all: lint test tables vectors sim synth
 $(WORKDIR):
 	mkdir -p $(WORKDIR)
 
-# The angle table and the machine constants are generated from focmodel, and CI
+# The angle table and the machine constants are generated from focmodel and CI
 # checks the committed copies still match rather than regenerating them silently.
 tables:
 	$(PYTHON) scripts/gen_tables.py --check

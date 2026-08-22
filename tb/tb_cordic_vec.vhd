@@ -8,7 +8,7 @@
 -- The angle bound holds for every input including vectors only a few LSB long,
 -- where the argument is badly conditioned in the input quantisation and not in
 -- the algorithm.  That is worth stating because it is the case the voltage
--- limiter meets whenever the controller is asking for almost no voltage, and an
+-- limiter meets whenever the controller is asking for almost no voltage and an
 -- implementation that lost the angle there would put the machine's voltage in an
 -- arbitrary direction every time it came out of standstill.
 -- -----------------------------------------------------------------------------

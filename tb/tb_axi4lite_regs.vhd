@@ -4,7 +4,7 @@
 -- Protocol and behaviour of the register file.
 --
 -- The protocol side matters more than it looks.  A slave that asserts a ready
--- before the corresponding valid, or that leaves a response outstanding, does
+-- before the corresponding valid or that leaves a response outstanding, does
 -- not fail in simulation against a well-behaved master; it fails months later
 -- against a processor that happens to pipeline differently.  The driver here
 -- follows the handshake strictly, waiting for each ready and each response, so
@@ -12,7 +12,7 @@
 -- passing.
 --
 -- The behaviour side covers the three things software will get wrong first:
--- byte strobes on a halfword write, the self-clearing command bit, and writes to
+-- byte strobes on a halfword write, the self-clearing command bit and writes to
 -- addresses that do not exist.
 -- -----------------------------------------------------------------------------
 
@@ -271,7 +271,7 @@ begin
               to_integer(unsigned(got)), 16#000033DD#, errs);
     checks := checks + 2;
 
-    -- Control bits reach their outputs, and the clear bit is a command that
+    -- Control bits reach their outputs and the clear bit is a command that
     -- pulses once and never reads back as set.
     axi_write(16#00#, x"0000001B", "1111");                                       -- bits 0, 1, 3, 4
     check_true("enable set", ctrl_enable = '1', errs);

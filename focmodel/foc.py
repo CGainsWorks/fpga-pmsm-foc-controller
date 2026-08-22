@@ -39,7 +39,7 @@ def clarke(ia: int, ib: int) -> tuple[int, int, bool]:
 
     The third phase current is never measured.  With an isolated star point the
     three phase currents sum to zero by Kirchhoff, so a third sensor carries no
-    information the first two do not already have, and leaving it out removes a
+    information the first two do not already have and leaving it out removes a
     sensor, a shunt, an amplifier and an ADC channel from every drive built on
     this block.
     """
@@ -78,11 +78,11 @@ class PiAxis:
         u[k] = clamp(Kp e[k] + I[k], +/- Umax)
 
     The integrator is kept in the natural format of the Ki times e product,
-    Q?.27, and only requantised on the way out.  That is not decoration: at the
+    Q?.27 and only requantised on the way out.  That is not decoration: at the
     reference tuning Ki is 0.0180, so a one-LSB error produces 296 accumulator
     counts and the smallest error the ADC can resolve still moves the integrator
     by nearly 300 counts.  Holding the integrator in the output format instead
-    would need Ki times e above 2**-13, that is an error of 68 LSB, and the loop
+    would need Ki times e above 2**-13, that is an error of 68 LSB and the loop
     would sit with a permanent offset it could not remove.
     """
 

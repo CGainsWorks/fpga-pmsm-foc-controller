@@ -7,9 +7,9 @@
 -- Windup.  The sequence drives the output hard into its limit and holds it there
 -- for two hundred samples, then removes the error.  A controller that kept
 -- integrating during the saturation would need roughly as many samples again to
--- unwind, and would sit at the limit long after the error changed sign.  The
+-- unwind and would sit at the limit long after the error changed sign.  The
 -- model and the RTL both freeze the integrator, so the output must come off the
--- limit on the sample after the error reverses, and the vector comparison holds
+-- limit on the sample after the error reverses and the vector comparison holds
 -- them to that sample by sample.
 --
 -- Dead zone.  The random tail includes errors of a single LSB.  If the

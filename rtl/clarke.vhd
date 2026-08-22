@@ -18,7 +18,7 @@
 --     i_alpha = i_a
 --     i_beta  = (i_a + 2 i_b) / sqrt(3)
 --
--- One multiplier, one adder, and a whole current sensor, shunt, amplifier and
+-- One multiplier, one adder and a whole current sensor, shunt, amplifier and
 -- ADC channel removed from the bill of materials of every drive built on this.
 -- The saving is real money per unit shipped, which is the sort of thing that
 -- decides whether a control block is used.
@@ -66,7 +66,7 @@ begin
 
   begin
 
-    if rising_edge(clk) then
+    if rising_edge(clk) and in_valid = '1' then
       t := resize(ia, C_W_SUM) + shift_left(resize(ib, C_W_SUM), 1);
       p := round_shr(t * to_signed(C_INV_SQRT3, 16), C_Q_TRIG);
 

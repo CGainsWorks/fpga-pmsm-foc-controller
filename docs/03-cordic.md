@@ -48,13 +48,13 @@ rotated by that angle, scaled by `K`.
 
 **Vectoring**, `s[i] = -sign(y[i])`, drives `y` to zero. A vector with `y = 0`
 lies on the positive `x` axis, so `x` ends up holding the magnitude, scaled by
-`K`, and `z` has accumulated the angle it took to get there, which is the
+`K` and `z` has accumulated the angle it took to get there, which is the
 argument of the input.
 
 The two differ in one comparison. Everything else, including the fold and the
 output stage, is shared.
 
-## Convergence, and why the fold is needed
+## Convergence and why the fold is needed
 
 A step can only ever subtract the angle it is given, so the algorithm resolves an
 angle `θ` if and only if every partial remainder can still be reached by the
@@ -80,7 +80,7 @@ stage count; dropping to 12 stages would still converge, it would simply be less
 accurate.
 
 In vectoring mode the same fold is applied on the sign of `x`, because vectoring
-converges only in the right half plane, and the quarter turn it took out is
+converges only in the right half plane and the quarter turn it took out is
 seeded into the accumulator so that the reported argument is still that of the
 original vector.
 
@@ -88,7 +88,7 @@ original vector.
 
 The stage count is set by requiring that the arithmetic contribute less angle
 error than the interface already carries. After `n` steps the unresolved residual
-is at most `atan(2**-(n-1))`, and it should sit below half an LSB of the 16-bit
+is at most `atan(2**-(n-1))` and it should sit below half an LSB of the 16-bit
 angle input:
 
     atan(2**-(n-1)) <= 0.5 × 2π / 2**16 = 4.79e-5 rad
@@ -114,7 +114,7 @@ magnitude is at most 2.83:
 
 The bound is loose because the four terms cannot all reach their worst case with
 the same input. The measured worst case over the committed 2000-vector set is
-**0.63 LSB**, reported by `tb_cordic_rot` on every CI run, and the testbench fails
+**0.63 LSB**, reported by `tb_cordic_rot` on every CI run and the testbench fails
 above 2 LSB. Both the derived bound and the measured figure are recorded because
 a bound with no measurement is a guess and a measurement with no bound is an
 anecdote.
@@ -122,7 +122,7 @@ anecdote.
 The gain compensation constant deserves its own line. `1/K = 0.6072529350` is held
 in Q0.17 as 79594, a relative error of 1.8e-6. At Q0.15 it would have been 19898,
 a relative error of 1.8e-5, which showed up in the model as a systematic
-**-0.27 LSB bias on every magnitude**: small, but a bias rather than noise, and
+**-0.27 LSB bias on every magnitude**: small but a bias rather than noise and
 therefore visible to anything downstream that integrates. Two extra bits on one
 constant removed it.
 
@@ -134,8 +134,8 @@ the output gain compensation. The design instantiates three.
 
 That is more than it needs to be. Each instance is used once per 5000 clocks, so
 a folded implementation reusing a single stage 18 times would cost about a
-eighteenth of the logic and still finish in 18 clocks, and one shared instance
+eighteenth of the logic and still finish in 18 clocks and one shared instance
 could serve all three uses. The pipelined form is kept because it is what makes
 the block reusable at full throughput, which is the multi-axis argument in
-docs/01, and because it is the version worth publishing. The trade is listed in
+docs/01 and because it is the version worth publishing. The trade is listed in
 docs/10-limitations-and-roadmap.md with the numbers attached.

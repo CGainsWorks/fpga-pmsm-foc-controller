@@ -12,7 +12,7 @@
 --
 --     atan(2**-i) <= sum_{j>i} atan(2**-j) + atan(2**-(n-1))
 --
--- which the binary angle set satisfies for every i, and the total reach is
+-- which the binary angle set satisfies for every i and the total reach is
 --
 --     sum_{i=0}^{17} atan(2**-i) = 1163715 counts = 1.743278 rad
 --

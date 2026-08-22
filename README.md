@@ -2,20 +2,20 @@
 
 A field-oriented control coprocessor for permanent-magnet synchronous motors,
 written in VHDL. Two phase currents and a rotor angle go in, six gate signals
-come out, and the whole current loop closes in fabric with no software in it: a
+come out and the whole current loop closes in fabric with no software in it: a
 pipelined CORDIC does both frame rotations and the voltage limiting, two
-fixed-point PI controllers regulate torque and flux, and a min-max modulator
+fixed-point PI controllers regulate torque and flux and a min-max modulator
 drives centre-aligned PWM with dead time. Configuration and telemetry over
 AXI4-Lite.
 
 Every word length, every gain and every constant in it is derived from something
-the system already fixes, and the derivation is written down next to the number.
+the system already fixes and the derivation is written down next to the number.
 
 > ### No hardware
 > This has never been on an FPGA and has never turned a motor. Everything here is
 > verified in simulation against documented models. There is no timing closure
 > figure, no vendor resource count and no measurement on a machine anywhere in
-> this repository, and none should be inferred.
+> this repository and none should be inferred.
 > **[docs/10-limitations-and-roadmap.md](docs/10-limitations-and-roadmap.md)**
 > sets out exactly what that leaves unclaimed and what would close the gap.
 
@@ -80,7 +80,7 @@ at any limit anywhere in the design.
 
 **Word lengths, from the converter and from the gain.** The data format is Q2.13:
 13 fraction bits because the 12-bit converter's LSB is 9.766e-4 per unit and the
-arithmetic should sit about eight times finer than the thing it measures, and two
+arithmetic should sit about eight times finer than the thing it measures and two
 integer bits because a drive has to keep measuring through a fault current of
 twice rated. The CORDIC runs 24 bits wide internally, four integer bits because
 the largest representable input pair has magnitude `sqrt(2) × 4` and the algorithm
@@ -102,14 +102,14 @@ vectors: **0.63 LSB**, against a derived bound of 1.64.
 **Two current sensors, not three.** With an isolated star point Kirchhoff gives
 `i_a + i_b + i_c = 0`, so the third sensor carries no information the first two do
 not. Substituting collapses the Clarke transform to `i_alpha = i_a` and
-`i_beta = (i_a + 2 i_b)/sqrt(3)`: one multiply, and a sensor, a shunt, an
+`i_beta = (i_a + 2 i_b)/sqrt(3)`: one multiply and a sensor, a shunt, an
 amplifier and an ADC channel removed from every drive built on it.
 [docs/04](docs/04-clarke-park.md)
 
 **Gains from one design rule.** Put the PI zero on the plant pole, `Ti = L/R`. The
 open loop becomes a pure integrator, `Kp/(sL)`, so `wc = Kp/L` and there is exactly
 one free parameter left. It belongs to the sample rate: one sample of computation
-delay halves the gain the sampled loop can carry, from `a < 2` to `a < 1`, and the
+delay halves the gain the sampled loop can carry, from `a < 2` to `a < 1` and the
 design sits at `a = 0.1`. That gives **81.3 degrees of phase margin and 26.0 dB of
 gain margin**. [docs/05](docs/05-current-loop-tuning.md)
 
@@ -119,12 +119,12 @@ analysis of the same gains, including the delay, says **0.913 ms**. The
 bit-accurate model measures 0.950 ms on the 50 us sample grid. `tb_foc_closed_loop`
 measures the RTL against the second of those on every CI run.
 
-**Voltage limiting in polar form, and the inverse Park for free.** The controller
+**Voltage limiting in polar form and the inverse Park for free.** The controller
 outputs go through a vectoring CORDIC to give magnitude and angle; the magnitude
 is clipped and the angle is left alone, so the applied voltage keeps the direction
 the controller asked for instead of being rotated by clipping the axes separately.
 Then, since `R(theta) R(phi) [m; 0] = R(theta + phi) [m; 0]`, one rotation does the
-limiter reconstruction and the inverse Park together, and the angle sum is a plain
+limiter reconstruction and the inverse Park together and the angle sum is a plain
 16-bit add because a binary angular measure is a residue system modulo one turn.
 
 **Min-max injection is space-vector PWM.** Adding the same offset to all three
@@ -137,7 +137,7 @@ same DC link, for three comparators instead of a sector decode and two dwell-tim
 multiplies. [docs/06](docs/06-svpwm-and-pwm.md)
 
 **Sampling at the carrier trough removes the ripple rather than filtering it.**
-Between switching instants the phase current is a straight line, and a
+Between switching instants the phase current is a straight line and a
 centre-aligned carrier makes those segments symmetric about the trough, so the
 instantaneous current there equals the mean over the period. That is why there is
 no anti-alias filter anywhere: a filter would have solved the same problem by
@@ -167,11 +167,11 @@ Three layers, each catching what the others cannot.
    compare **for equality with no tolerance**. A tolerance would hide the
    off-by-one in a shift that these vectors exist to catch.
 3. **The RTL matches the mathematics.** The CORDIC and Clarke testbenches also
-   compare against `ieee.math_real` within a bound derived before it is measured,
+   compare against `ieee.math_real` within a bound derived before it is measured
    and report the worst error they saw. Layer two alone would pass if the model
    and the RTL were wrong in the same way.
 
-Ten self-checking testbenches. Each counts its comparisons, prints the count, and
+Ten self-checking testbenches. Each counts its comparisons, prints the count and
 fails if any comparison did not hold **or if it ran no comparisons at all**,
 because a vector file that failed to open would otherwise look like a pass.
 
@@ -185,7 +185,7 @@ integrators that were never told they exist.
 Three mechanisms stop the layers drifting apart, all in CI: the angle table and
 the machine constants are generated from the models and regenerated to check,
 `tests/test_rtl_constants.py` parses the word lengths out of the VHDL and compares
-them with the Python, and `scripts/check_claims.py` recomputes every number quoted
+them with the Python and `scripts/check_claims.py` recomputes every number quoted
 in this README from the models and fails if the text says something else.
 
 ---

@@ -31,7 +31,7 @@ def test_clarke_is_amplitude_invariant() -> None:
 
     This is the whole reason for the 2/3 in front of the transform.  Every
     per-unit limit downstream, the voltage limit above all, is stated as a space
-    vector magnitude, and it would mean something 1.5 times different if the
+    vector magnitude and it would mean something 1.5 times different if the
     power-invariant scaling had been used instead.
     """
     for amp in (0.25, 0.5, 1.0, 2.0):
@@ -170,7 +170,7 @@ def test_integrator_has_no_dead_zone() -> None:
     """A one-LSB error must still move the integrator.
 
     Holding the state in the output format instead of in the format of the
-    Ki times e product is the classic way to get this wrong, and it leaves a
+    Ki times e product is the classic way to get this wrong and it leaves a
     permanent offset the loop cannot remove.
     """
     pi = PiAxis(P.KP_Q, P.KI_Q, P.V_MAX_Q)

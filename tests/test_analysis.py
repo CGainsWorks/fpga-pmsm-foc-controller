@@ -1,7 +1,7 @@
 """The tuning, checked against the analysis it was derived from.
 
 The gains are not tuned by hand and they are not tuned by simulation.  They come
-from one design rule, and these tests re-derive the rule and then confirm that
+from one design rule and these tests re-derive the rule and then confirm that
 the closed loop the bit-accurate model produces actually behaves the way the rule
 says it will.  A change to the sample rate, the machine or the word lengths has
 to survive both.
@@ -79,11 +79,11 @@ def test_the_delay_costs_phase_margin_and_usable_gain() -> None:
     """What the sample-to-apply delay actually costs.
 
     It is not rise time.  With the cancellation in place the loop is a pure
-    integrator, a/(z**d (z-1)), and adding a sample of delay moves the dominant
+    integrator, a/(z**d (z-1)) and adding a sample of delay moves the dominant
     pole slightly faster while introducing a second, fast one, so the 10 to 90
     per cent rise is marginally shorter rather than longer.  What the delay takes
     is margin and headroom: the sampled loop is stable for a < 2 without the
-    delay and only for a < 1 with it, so the gain the loop can carry is halved,
+    delay and only for a < 1 with it, so the gain the loop can carry is halved
     and the phase margin at the design point drops with it.  That is the reason
     the design sits at a = 0.1 rather than anywhere near the limit.
     """
@@ -116,7 +116,7 @@ def test_disturbance_rejection_runs_at_the_open_loop_time_constant() -> None:
 
     The cancelled plant pole is still there; it simply does not appear in the
     reference transfer function.  A back-EMF step therefore takes L/R to reject,
-    five times longer than a reference step takes to follow, and that is the
+    five times longer than a reference step takes to follow and that is the
     whole argument for adding feedforward decoupling.  The test pins the effect
     down so that the roadmap item stays honest.
     """
@@ -127,7 +127,7 @@ def test_disturbance_rejection_runs_at_the_open_loop_time_constant() -> None:
     # Four reference rise times in, a loop with nothing to reject would be
     # inside a per cent of the target.  With the back-EMF to reject it is not.
     assert iq[fast] < 0.90 * 0.3
-    # Three electrical time constants in, it has all but arrived, and the tail
+    # Three electrical time constants in, it has all but arrived and the tail
     # that remains decays at L/R rather than at the closed-loop bandwidth.
     assert abs(iq[slow] - 0.3) < 0.01
     assert abs(iq[-1] - 0.3) < 2e-3
@@ -144,7 +144,7 @@ def test_sampling_bound_is_respected() -> None:
     """wc*Ts must stay well below the delay-limited stability bound.
 
     With one sample of computation delay the loop is a/(z(z-1)); it leaves the
-    unit circle at a = 1, and a = (Kp+Ki)(1-p)/R_pu here.  The design sits at a
+    unit circle at a = 1 and a = (Kp+Ki)(1-p)/R_pu here.  The design sits at a
     tenth of that.
     """
     kp, ki = quantised_gains()

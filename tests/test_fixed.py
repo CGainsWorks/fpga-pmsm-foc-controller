@@ -85,7 +85,7 @@ def test_wrap_makes_angle_addition_associative() -> None:
 
 
 def test_negating_an_angle_is_exact_at_the_end_point() -> None:
-    """-(-pi) is +pi, and +pi and -pi are the same angle."""
+    """-(-pi) is +pi and +pi and -pi are the same angle."""
     assert wrap(0 - (-32768), 16) == -32768
 
 

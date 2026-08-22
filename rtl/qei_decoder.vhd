@@ -13,7 +13,7 @@
 --
 -- with t_r the settling time allowed, one clock here.  For a 28 nm device with
 -- the typical tau of about 20 ps and T0 of about 10 fs, one clock of 10 ns is
--- 500 time constants, and the exponential puts the answer far beyond any
+-- 500 time constants and the exponential puts the answer far beyond any
 -- interesting horizon.  Two stages are enough and the third is free.
 --
 -- Filtering.  After the synchroniser each channel must hold the same value for
@@ -21,7 +21,7 @@
 -- compared with the closest two real edges can ever be.  At 6000 rpm on a 2500
 -- line encoder, four counts per cycle gives 10^6 counts per second, so real
 -- edges are 100 clocks apart at 100 MHz.  Four clocks is 25 times shorter than
--- that, so the filter cannot delete a real transition, and it removes anything
+-- that, so the filter cannot delete a real transition and it removes anything
 -- under 40 ns, which covers the reflections and coupled noise a motor cable
 -- carries.
 --
@@ -33,7 +33,7 @@
 -- Angle.  theta = pos * scale, taking bits 31 down to 16, with the register
 -- scale set to round(pole_pairs * 2**32 / counts_per_rev).  The low 32 bits of
 -- the product are the fractional part of the electrical turn, so the modulo is
--- free, and the rounding error of scale is at most 0.5 in 2**-16 of a turn,
+-- free and the rounding error of scale is at most 0.5 in 2**-16 of a turn,
 -- which is 0.076 of one LSB of the 16-bit angle at 10000 counts per revolution.
 -- It does not accumulate, because pos itself is exact.
 --
@@ -41,7 +41,7 @@
 -- per window regardless of speed, so the relative error grows without bound as
 -- the machine slows: at 10000 counts per revolution and a 1 ms window one count
 -- is 6 rpm, fine at 3000 rpm and useless at 30.  The fix is to time a whole
--- number of counts instead, or to do both and pick; it is listed in
+-- number of counts instead or to do both and pick; it is listed in
 -- docs/10-limitations-and-roadmap.md and is not needed by the current loop,
 -- which uses angle and never speed.
 -- -----------------------------------------------------------------------------

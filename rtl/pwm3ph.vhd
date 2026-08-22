@@ -16,7 +16,7 @@
 --
 -- Sampling.  The strobe is issued at the trough, where every leg is on the same
 -- side of its comparator and the inverter is applying a zero vector.  Between
--- switching instants the phase current is a straight line, and a centre-aligned
+-- switching instants the phase current is a straight line and a centre-aligned
 -- carrier makes that line symmetric about the trough, so the instantaneous
 -- current at the trough is equal to the mean current over the period.  The
 -- switching ripple is therefore not filtered out, it is not sampled in the first
@@ -31,7 +31,7 @@
 -- Dead time.  Both transistors of a leg are held off for deadtime clocks after
 -- every transition.  It has to outlast the worst-case turn-off of the outgoing
 -- device plus the gate-driver propagation skew, minus the best-case turn-on of
--- the incoming one, or the two conduct together across the DC link.  One
+-- the incoming one or the two conduct together across the DC link.  One
 -- microsecond, 100 clocks, is generous for a 48 V MOSFET stage; the cost of that
 -- generosity is a volt-scale distortion that docs/10-limitations-and-roadmap.md
 -- takes up as the first thing to compensate.
