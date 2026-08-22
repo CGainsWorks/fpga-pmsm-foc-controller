@@ -1,0 +1,5 @@
+# The models and the vector generator need nothing but the standard library.
+# These are the tools that check them.
+pytest==8.3.4
+ruff==0.8.4
+vsg==3.35.0

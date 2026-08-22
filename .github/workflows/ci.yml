@@ -1,0 +1,95 @@
+name: ci
+
+# What CI can and cannot do here.
+#
+# It runs everything: the Python model test suite, the style checks, a
+# regeneration check on both generated VHDL files, all ten testbenches under
+# GHDL and a synthesis elaboration of the top level.  Nothing in this repository
+# needs hardware to be checked, because nothing in it claims a hardware result.
+#
+# What it does not do is put the design on an FPGA.  No timing closure figure,
+# no resource count from a vendor tool and no measurement on a motor appears
+# anywhere, and docs/10-limitations-and-roadmap.md says so in the same words.
+# The synthesis job below elaborates the design through GHDL's synthesiser,
+# which catches a construct that simulates and cannot be built; it is not a
+# place-and-route and it makes no timing claim.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  models:
+    name: models, style and generated files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Python style
+        run: ruff check .
+
+      - name: VHDL style
+        run: vsg -c vsg.yaml -f rtl/*.vhd tb/*.vhd
+
+      - name: Model test suite
+        run: python -m pytest -q
+
+      # The angle table and the machine constants are generated from focmodel.
+      # If either committed file no longer matches what the generator produces,
+      # the RTL and the models have drifted and the vectors would be checking
+      # the wrong arithmetic.
+      - name: Generated files are up to date
+        run: python scripts/gen_tables.py --check
+
+      # Every figure quoted in the README is recomputed from the models here.
+      - name: README numbers are the model's numbers
+        run: python scripts/check_claims.py
+
+  simulate:
+    name: simulate and synthesise
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: ghdl/setup-ghdl@v1
+        with:
+          version: "5.0.1"
+          backend: llvm
+
+      - name: Versions
+        run: |
+          ghdl --version
+          python --version
+
+      - name: Generate the testbench vectors
+        run: make vectors PYTHON=python
+
+      # Ten self-checking testbenches.  Each one counts its comparisons, prints
+      # the count and fails the simulation if any comparison did not hold or if
+      # it managed to run no comparisons at all.
+      - name: Run every testbench
+        run: make sim PYTHON=python
+
+      - name: Synthesis elaboration
+        run: make synth PYTHON=python

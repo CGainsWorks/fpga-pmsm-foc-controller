@@ -1,0 +1,24 @@
+# Simulation products.  The vector files are generated from the models by
+# `make vectors`, so they are not committed: a stale vector file that disagreed
+# with the models would be a testbench passing against the wrong specification.
+sim/build/
+sim/vectors/*.txt
+*.ghw
+*.vcd
+*.cf
+*.o
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# Editors
+.vscode/
+.idea/
+*.swp

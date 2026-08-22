@@ -1,0 +1,33 @@
+# VHDL Style Guide configuration.
+#
+# The rules left on are the ones that catch real defects or real inconsistency.
+# The handful below are switched off because they enforce a house layout that
+# fights the comment-heavy formatting this repository uses on purpose; none of
+# them can change what the hardware does.
+rule:
+  global:
+    indent_size: 2
+  function_019:
+    disable: true          # parenthesis placement in function declarations
+  if_002:
+    disable: true          # requires every condition to be parenthesised
+  constant_012:
+    disable: true          # alignment of multi-line constant arrays
+  constant_016:
+    disable: true
+  package_401:
+    disable: true
+  generic_007:
+    case: 'upper'          # generics are G_NAME throughout
+  generic_map_002:
+    case: 'upper'          # ... and on the left of every generic map
+  constant_004:
+    case: 'upper'          # constants are C_NAME throughout
+  signal_007:
+    disable: true          # testbenches legitimately initialise their stimulus,
+  variable_007:
+    disable: true          # and a counter that starts anywhere but zero is a bug
+  instantiation_034:
+    disable: true          # direct entity instantiation is used deliberately:
+  instantiation_036:
+    disable: true          # component declarations add a second place to edit
