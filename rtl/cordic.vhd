@@ -70,9 +70,9 @@ architecture rtl of cordic is
 
   type z_array_t is array (0 to C_N_STAGES) of signed(C_W_Z - 1 downto 0);
 
-  signal x : xy_array_t;
-  signal y : xy_array_t;
-  signal z : z_array_t;
+  signal x : xy_array_t := (others => (others => '0'));
+  signal y : xy_array_t := (others => (others => '0'));
+  signal z : z_array_t  := (others => (others => '0'));
 
   -- One bit for the input register, C_N_STAGES for the iterations, one for the
   -- output register.
@@ -221,6 +221,9 @@ begin
   -- Only the valid chain is reset.  The datapath registers are left free
   -- running: their contents are meaningless until a valid arrives with them, and
   -- not resetting 1200 flip-flops keeps them out of the global reset fan-out.
+  -- They are given a power-up value in their declaration, which every FPGA this
+  -- would target honours from the configuration bitstream, so simulation and
+  -- hardware agree on what is in them before the first transaction.
   -- ---------------------------------------------------------------------------
   p_valid : process (clk) is
   begin

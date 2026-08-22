@@ -165,11 +165,14 @@ begin
   end generate g_leg;
 
   -- pragma translate_off
+  -- The configuration is only required to make sense once the gates are live.
+  -- Out of reset and before software has written anything, pwm_top is zero and
+  -- the carrier simply toggles between 0 and 1 driving nothing.
   p_check : process (clk) is
   begin
 
     if rising_edge(clk) then
-      if rst = '0' then
+      if rst = '0' and enable = '1' then
         assert pwm_top >= 2
           report "pwm3ph: pwm_top must be at least 2"
           severity failure;
