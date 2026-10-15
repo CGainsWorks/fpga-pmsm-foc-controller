@@ -103,5 +103,10 @@ jobs:
       - name: Run every testbench
         run: make sim PYTHON=python
 
+      # TEMPORARY: isolates which construct GHDL cannot elaborate. Reports
+      # only, and is removed once the answer is in.
+      - name: Probe the synthesiser
+        run: make synth-probe PYTHON=python
+
       - name: Elaborate every unit through the synthesiser
         run: make synth PYTHON=python

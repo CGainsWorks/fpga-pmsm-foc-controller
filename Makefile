@@ -84,7 +84,7 @@ TESTS = \
 
 VECTORS = sim/vectors/cordic_rot.txt
 
-.PHONY: all vectors tables analyse sim sim-one synth lint lint-vhdl lint-py test clean
+.PHONY: all vectors tables analyse sim sim-one synth lint lint-vhdl lint-py test clean synth-probe
 
 all: lint test tables vectors sim synth
 
@@ -162,6 +162,26 @@ synth: analyse
 	fi; \
 	echo "synthesis check complete"
 
+
+# TEMPORARY.  Finds which construct GHDL cannot elaborate; see
+# sim/probe/synth_probe.vhd.  Reports and never fails, because its whole job is
+# to tell us something rather than to gate anything.  Delete with the probe.
+PROBES = probe_resize probe_shift_const probe_shift_gen probe_mul probe_round_shr probe_sat_to probe_wrap_to probe_overflows
+
+synth-probe: | $(WORKDIR)
+	@$(GHDL) -a $(GHDL_FLAGS) rtl/foc_pkg.vhd > /dev/null; \
+	$(GHDL) -a $(GHDL_FLAGS) sim/probe/synth_probe.vhd || exit 1; \
+	for u in $(PROBES); do \
+		if $(GHDL) --synth $(GHDL_FLAGS) $$u > /dev/null \
+			2> $(WORKDIR)/$$u.log; then \
+			echo "  ok    $$u"; \
+		elif grep -q 'GHDL Bug occurred' $(WORKDIR)/$$u.log; then \
+			echo "  CRASH $$u"; \
+		else \
+			echo "  error $$u"; \
+			sed 's/^/          /' $(WORKDIR)/$$u.log | head -4; \
+		fi; \
+	done
 lint: lint-vhdl lint-py
 
 lint-vhdl:
