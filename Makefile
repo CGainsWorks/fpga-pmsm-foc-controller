@@ -67,9 +67,6 @@ SYNTH_UNITS = \
 	current_loop \
 	foc_top
 
-# Units GHDL 5.0.1 cannot elaborate because of the internal error above.
-SYNTH_TOOL_BUG = cordic clarke pi_axis svm current_loop foc_top
-
 TESTS = \
 	tb_cordic_rot \
 	tb_cordic_vec \
@@ -84,7 +81,7 @@ TESTS = \
 
 VECTORS = sim/vectors/cordic_rot.txt
 
-.PHONY: all vectors tables analyse sim sim-one synth lint lint-vhdl lint-py test clean synth-probe
+.PHONY: all vectors tables analyse sim sim-one synth lint lint-vhdl lint-py test clean
 
 all: lint test tables vectors sim synth
 
@@ -127,61 +124,28 @@ sim-one: analyse vectors
 # names an entity instead of a design. The leaves are also where the arithmetic
 # actually is: the top level is wiring and one strobe.
 #
-# GHDL 5.0.1 raises an internal error, not a diagnostic, on every unit that
-# calls the arithmetic helpers in rtl/foc_pkg.vhd. The helpers return an
-# unconstrained signed, which is the same shape as numeric_std.resize and is
-# ordinary VHDL-2008; the crash is a tool bug and it is reported as one here
-# rather than worked around in correct RTL. SYNTH_TOOL_BUG lists the units it
-# affects. The recipe fails if a unit crashes that is not on the list or if
-# a unit on the list starts working, so the list cannot go stale. See
-# docs/09-verification.md for what that leaves uncovered.
+# A crash is reported separately from a diagnostic, because the two mean
+# different things. GHDL 5.0.1 used to crash on six of these nine units and
+# docs/09-verification.md records how that was tracked down to one function.
 synth: analyse
-	@fail=""; bug=""; \
+	@fail=""; \
 	for u in $(SYNTH_UNITS); do \
 		if $(GHDL) --synth $(GHDL_FLAGS) $$u \
 			> $(WORKDIR)/$$u.synth.vhd 2> $(WORKDIR)/$$u.synth.log; then \
 			echo "  ok    $$u"; \
-			case " $(SYNTH_TOOL_BUG) " in *" $$u "*) \
-				echo "        $$u now synthesises: remove it from SYNTH_TOOL_BUG"; \
-				fail="$$fail $$u";; esac; \
 		elif grep -q 'GHDL Bug occurred' $(WORKDIR)/$$u.synth.log; then \
-			case " $(SYNTH_TOOL_BUG) " in \
-				*" $$u "*) echo "  tool  $$u  GHDL internal error, see docs/09";; \
-				*) echo "  FAIL  $$u  new GHDL internal error"; fail="$$fail $$u";; \
-			esac; \
-			bug="$$bug $$u"; \
+			echo "  FAIL  $$u  crashed the synthesiser, see docs/09"; \
+			fail="$$fail $$u"; \
 		else \
 			echo "  FAIL  $$u"; \
 			sed 's/^/          /' $(WORKDIR)/$$u.synth.log | head -12; \
 			fail="$$fail $$u"; \
 		fi; \
 	done; \
-	if [ -n "$$fail" ]; then echo "synthesis check failed for:$$fail"; exit 1; fi; \
-	if [ -n "$$bug" ]; then \
-		echo "not covered, GHDL internal error:$$bug"; \
-	fi; \
-	echo "synthesis check complete"
+	if [ -n "$$fail" ]; then echo "synthesis failed for:$$fail"; exit 1; fi; \
+	echo "every unit elaborated through the synthesiser"
 
 
-# TEMPORARY.  Finds which construct GHDL cannot elaborate; see
-# sim/probe/synth_probe.vhd.  Reports and never fails, because its whole job is
-# to tell us something rather than to gate anything.  Delete with the probe.
-PROBES = probe_s_current probe_s_literal probe_s_aggregate probe_s_clampwide
-
-synth-probe: | $(WORKDIR)
-	@$(GHDL) -a $(GHDL_FLAGS) rtl/foc_pkg.vhd > /dev/null; \
-	$(GHDL) -a $(GHDL_FLAGS) sim/probe/synth_probe.vhd || exit 0; \
-	for u in $(PROBES); do \
-		if $(GHDL) --synth $(GHDL_FLAGS) $$u > /dev/null \
-			2> $(WORKDIR)/$$u.log; then \
-			echo "  ok    $$u"; \
-		elif grep -q 'GHDL Bug occurred' $(WORKDIR)/$$u.log; then \
-			echo "  CRASH $$u"; \
-		else \
-			echo "  error $$u"; \
-			sed 's/^/          /' $(WORKDIR)/$$u.log | head -4; \
-		fi; \
-	done
 lint: lint-vhdl lint-py
 
 lint-vhdl:

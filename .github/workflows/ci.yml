@@ -11,10 +11,9 @@ name: ci
 # What it does not do is put the design on an FPGA. No timing closure figure, no
 # resource count from a vendor tool and no measurement on a motor appears
 # anywhere and docs/10-limitations-and-roadmap.md says so in the same words. The
-# synthesis step elaborates each unit through GHDL's synthesiser, which catches a
-# construct that simulates and cannot be built. It is not a place-and-route, it
-# makes no timing claim and it covers three of the nine units: GHDL 5.0.1 crashes
-# on the rest, which docs/09-verification.md documents rather than works around.
+# synthesis step elaborates all nine units through GHDL's synthesiser, which
+# catches a construct that simulates and cannot be built. It is not a
+# place-and-route and it makes no timing claim.
 #
 # Why it is one job and not several.
 #
@@ -102,11 +101,6 @@ jobs:
       # managed to run no comparisons at all.
       - name: Run every testbench
         run: make sim PYTHON=python
-
-      # TEMPORARY: isolates which construct GHDL cannot elaborate. Reports
-      # only, and is removed once the answer is in.
-      - name: Probe the synthesiser
-        run: make synth-probe PYTHON=python
 
       - name: Elaborate every unit through the synthesiser
         run: make synth PYTHON=python

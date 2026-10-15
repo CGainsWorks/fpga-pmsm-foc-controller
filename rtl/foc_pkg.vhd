@@ -71,6 +71,12 @@ package foc_pkg is
   -- Clamp into w bits.  Used everywhere a result leaves a wide internal format,
   -- because wrapping would turn an overcurrent into a sign reversal that the
   -- controller would then act on as if it were a measurement.
+  --
+  -- w must lie between 2 and 31, because the limits are built as VHDL integers.
+  -- The design uses 16, 18 and 20.  The obvious alternative, shifting a one up
+  -- to the limit at the operand's width, crashes the GHDL 5.0.1 synthesiser
+  -- whenever the operand is wider than about 32 bits; docs/09-verification.md
+  -- records how that was found and why the limits are written this way.
 
   function sat_to (v : signed; w : natural) return signed;
 
@@ -105,8 +111,8 @@ package body foc_pkg is
 
   function sat_to (v : signed; w : natural) return signed is
 
-    variable hi : signed(v'length - 1 downto 0);
-    variable lo : signed(v'length - 1 downto 0);
+    constant C_HI : integer := 2 ** (w - 1) - 1;
+    constant C_LO : integer := -(2 ** (w - 1));
 
   begin
 
@@ -114,13 +120,10 @@ package body foc_pkg is
       return resize(v, w);
     end if;
 
-    hi := shift_left(to_signed(1, v'length), w - 1) - 1;
-    lo := -shift_left(to_signed(1, v'length), w - 1);
-
-    if v > hi then
-      return resize(hi, w);
-    elsif v < lo then
-      return resize(lo, w);
+    if v > to_signed(C_HI, v'length) then
+      return to_signed(C_HI, w);
+    elsif v < to_signed(C_LO, v'length) then
+      return to_signed(C_LO, w);
     else
       return resize(v, w);
     end if;
@@ -129,8 +132,8 @@ package body foc_pkg is
 
   function overflows (v : signed; w : natural) return boolean is
 
-    variable hi : signed(v'length - 1 downto 0);
-    variable lo : signed(v'length - 1 downto 0);
+    constant C_HI : integer := 2 ** (w - 1) - 1;
+    constant C_LO : integer := -(2 ** (w - 1));
 
   begin
 
@@ -138,9 +141,7 @@ package body foc_pkg is
       return false;
     end if;
 
-    hi := shift_left(to_signed(1, v'length), w - 1) - 1;
-    lo := -shift_left(to_signed(1, v'length), w - 1);
-    return v > hi or v < lo;
+    return v > to_signed(C_HI, v'length) or v < to_signed(C_LO, v'length);
 
   end function overflows;
 

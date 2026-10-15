@@ -137,28 +137,55 @@ It does not put the design on an FPGA. There is no timing closure figure, no
 resource count from a vendor tool and no measurement on a motor anywhere in this
 repository.
 
-The synthesis step elaborates each unit through GHDL's synthesiser, which is what
-catches a construct that simulates and cannot be built. It is not a
-place-and-route and it makes no timing claim. At present it does not cover the
-whole design either.
+The synthesis step elaborates all nine units through GHDL's synthesiser, which
+is what catches a construct that simulates and cannot be built. It is not a
+place-and-route and it makes no timing claim.
 
-GHDL 5.0.1 raises an internal error, `TYPES.INTERNAL_ERROR` at
-`netlists-utils.adb:163`, on every unit that calls the arithmetic helpers in
-`rtl/foc_pkg.vhd`. That is a crash rather than a diagnostic: the tool does not
-say the RTL is unsynthesisable, it stops working. The helpers return an
-unconstrained `signed` whose width comes from a parameter, which is the same
-shape as `numeric_std.resize` and is ordinary VHDL-2008, so the fault is in the
-tool. It has not been worked around, because contorting correct and tested
-arithmetic to suit one open-source tool's internal error is a worse trade than
-saying plainly what is not covered.
+## How the synthesis crash was found
 
-So the synthesis step covers three of the nine units, `pwm3ph`, `qei_decoder`
-and `axi4lite_regs`. The other six are elaborated only by the simulator. The
-step still earns its place: it lists the affected units explicitly and fails if
-a unit crashes that is not on the list, if a unit on the list starts working, or
-if any unit produces a real synthesis diagnostic. Vendor synthesis is the first
-item in docs/10-limitations-and-roadmap.md for this reason as well as for the
-timing report.
+Worth recording, because the method matters more than the answer.
 
-docs/10-limitations-and-roadmap.md says the same thing at greater length and
-lists what would have to happen to change it.
+Six of the nine units used to crash GHDL 5.0.1 with `TYPES.INTERNAL_ERROR` at
+`netlists-utils.adb:163`. That is a crash rather than a diagnostic: the tool does
+not say the RTL cannot be synthesised, it stops working, so it points at nothing.
+
+The first two explanations were both wrong. Every crashing unit called an
+arithmetic helper from `rtl/foc_pkg.vhd`. Every crashing unit also reached
+`numeric_std.shift_left` through those helpers, while the three passing units
+did neither. The correlation was exact for both, which is exactly why neither was
+evidence. A third guess, that the clock enable written into the edge condition
+was at fault, fitted equally well and was also wrong.
+
+What settled it was reduction. Each construct was probed on its own, then the
+smallest crashing unit was copied and features removed one at a time, then the
+surviving suspects were varied along two axes at once:
+
+| probe | result |
+| --- | --- |
+| each construct alone, 24-bit operands | all elaborate |
+| clock enable, both in and under the edge | both elaborate |
+| `clarke` with the clock enable removed | still crashes |
+| `clarke` with the process variables removed | still crashes |
+| `clarke` with the signal initialisers removed | still crashes |
+| `clarke` with the helpers written inline | **elaborates** |
+| `round_shr` on a 34-bit signal and a 42-bit product | both elaborate |
+| `overflows` on a 34-bit signal and a 42-bit product | both elaborate |
+| `sat_to` on a 34-bit signal and a 42-bit product | **both crash** |
+
+So it was one function out of four, only when narrowing a wide operand:
+`sat_to` taking 24 bits to 16 elaborated, taking 34 or 42 bits to 16 did not.
+The body built its limits by shifting a one up to the limit at the operand's
+width. `round_shr` builds its rounding term the same way without trouble, so
+the trigger is that construction combined with narrowing the result.
+
+Three reformulations were tried, all checked first against the original in
+integer arithmetic over every boundary and twenty thousand random values at six
+width combinations, with no mismatches. All three elaborate. The one adopted
+builds the limits as VHDL integer literals, which is the smallest change and
+needs no edit at any of the thirteen call sites. The cost is a precondition that
+`w` lie between 2 and 31; the design uses 16, 18 and 20, and
+`rtl/foc_pkg.vhd` states it.
+
+All nine units now elaborate. The synthesis step still separates a crash from a
+diagnostic, because if the construct ever comes back the message should say so
+rather than looking like a design error.

@@ -191,11 +191,11 @@ the machine constants are generated from the models and regenerated to check;
 them with the Python; and `scripts/check_claims.py` recomputes every number quoted
 in this README from the models and fails if the text says something else.
 
-CI also elaborates each unit through GHDL's synthesiser, which catches a
-construct that simulates and cannot be built. That covers three of the nine
-units today: GHDL 5.0.1 crashes with an internal error on every unit that calls
-the arithmetic helpers, which is a tool bug and is documented rather than worked
-around. See [docs/09](docs/09-verification.md).
+CI also elaborates all nine units through GHDL's synthesiser, which catches a
+construct that simulates and cannot be built. Six of them used to crash the
+tool outright; [docs/09](docs/09-verification.md) records how that was reduced
+to one function out of four, narrowing a wide operand, plus the reformulation
+that fixed it.
 
 ---
 
