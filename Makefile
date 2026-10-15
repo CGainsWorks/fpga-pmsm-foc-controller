@@ -67,6 +67,9 @@ SYNTH_UNITS = \
 	current_loop \
 	foc_top
 
+# Units GHDL 5.0.1 cannot elaborate because of the internal error above.
+SYNTH_TOOL_BUG = cordic clarke pi_axis svm current_loop foc_top
+
 TESTS = \
 	tb_cordic_rot \
 	tb_cordic_vec \
@@ -120,23 +123,44 @@ sim-one: analyse vectors
 # it proves the RTL elaborates through a synthesiser, which is what catches a
 # construct that simulates and cannot be built.
 #
-# Each unit is elaborated on its own rather than only the top, for two reasons.
-# A failure then names the entity instead of the design; the leaves are also
-# where the arithmetic actually lives: the top level is wiring and one strobe.
+# Each unit is elaborated on its own rather than only the top. A failure then
+# names an entity instead of a design. The leaves are also where the arithmetic
+# actually is: the top level is wiring and one strobe.
+#
+# GHDL 5.0.1 raises an internal error, not a diagnostic, on every unit that
+# calls the arithmetic helpers in rtl/foc_pkg.vhd. The helpers return an
+# unconstrained signed, which is the same shape as numeric_std.resize and is
+# ordinary VHDL-2008; the crash is a tool bug and it is reported as one here
+# rather than worked around in correct RTL. SYNTH_TOOL_BUG lists the units it
+# affects. The recipe fails if a unit crashes that is not on the list or if
+# a unit on the list starts working, so the list cannot go stale. See
+# docs/09-verification.md for what that leaves uncovered.
 synth: analyse
-	@fail=""; \
+	@fail=""; bug=""; \
 	for u in $(SYNTH_UNITS); do \
 		if $(GHDL) --synth $(GHDL_FLAGS) $$u \
 			> $(WORKDIR)/$$u.synth.vhd 2> $(WORKDIR)/$$u.synth.log; then \
 			echo "  ok    $$u"; \
+			case " $(SYNTH_TOOL_BUG) " in *" $$u "*) \
+				echo "        $$u now synthesises: remove it from SYNTH_TOOL_BUG"; \
+				fail="$$fail $$u";; esac; \
+		elif grep -q 'GHDL Bug occurred' $(WORKDIR)/$$u.synth.log; then \
+			case " $(SYNTH_TOOL_BUG) " in \
+				*" $$u "*) echo "  tool  $$u  GHDL internal error, see docs/09";; \
+				*) echo "  FAIL  $$u  new GHDL internal error"; fail="$$fail $$u";; \
+			esac; \
+			bug="$$bug $$u"; \
 		else \
 			echo "  FAIL  $$u"; \
 			sed 's/^/          /' $(WORKDIR)/$$u.synth.log | head -12; \
 			fail="$$fail $$u"; \
 		fi; \
 	done; \
-	if [ -n "$$fail" ]; then echo "synthesis failed for:$$fail"; exit 1; fi; \
-	echo "every unit elaborated through the synthesiser"
+	if [ -n "$$fail" ]; then echo "synthesis check failed for:$$fail"; exit 1; fi; \
+	if [ -n "$$bug" ]; then \
+		echo "not covered, GHDL internal error:$$bug"; \
+	fi; \
+	echo "synthesis check complete"
 
 lint: lint-vhdl lint-py
 

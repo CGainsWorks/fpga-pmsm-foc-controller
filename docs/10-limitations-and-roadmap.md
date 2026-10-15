@@ -15,9 +15,16 @@ be inferred**:
 * that the dead time is adequate for any real gate driver and transistor pair,
 * that the encoder filter is adequate against any real motor cable.
 
-The synthesis job in CI elaborates the design through GHDL's synthesiser. That
-catches a construct that simulates and cannot be built, which is worth having
-and it is not a place-and-route and it produces no timing number.
+The synthesis step in CI elaborates each unit through GHDL's synthesiser, which
+catches a construct that simulates and cannot be built. It is not a
+place-and-route and it produces no timing number.
+
+It also covers only three of the nine units. GHDL 5.0.1 crashes with an internal
+error on every unit that calls the arithmetic helpers in `rtl/foc_pkg.vhd`, which
+is a tool bug rather than a statement about the RTL; docs/09-verification.md sets
+out the detail and why it has not been worked around. The six uncovered units are
+elaborated only by the simulator, which is a further reason vendor synthesis is
+step one below.
 
 ### What would close the gap
 

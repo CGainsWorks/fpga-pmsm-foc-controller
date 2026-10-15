@@ -42,7 +42,7 @@ Needs GHDL 5 or later and Python 3.10 or later. Individual pieces:
 make test       # the Python model test suite
 make sim        # analyse and run every testbench
 make sim-one TB=tb_foc_closed_loop
-make synth      # synthesis elaboration of the top level
+make synth      # elaborate every unit through the synthesiser
 make lint       # VHDL and Python style
 ```
 
@@ -186,10 +186,16 @@ at locked rotor against the predicted rise time, then turning at 500 rpm where
 integrators that were never told they exist.
 
 Three mechanisms stop the layers drifting apart, all in CI: the angle table and
-the machine constants are generated from the models and regenerated to check,
+the machine constants are generated from the models and regenerated to check;
 `tests/test_rtl_constants.py` parses the word lengths out of the VHDL and compares
-them with the Python and `scripts/check_claims.py` recomputes every number quoted
+them with the Python; and `scripts/check_claims.py` recomputes every number quoted
 in this README from the models and fails if the text says something else.
+
+CI also elaborates each unit through GHDL's synthesiser, which catches a
+construct that simulates and cannot be built. That covers three of the nine
+units today: GHDL 5.0.1 crashes with an internal error on every unit that calls
+the arithmetic helpers, which is a tool bug and is documented rather than worked
+around. See [docs/09](docs/09-verification.md).
 
 ---
 

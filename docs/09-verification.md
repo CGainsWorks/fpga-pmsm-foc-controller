@@ -135,9 +135,30 @@ Three mechanisms stop the three layers drifting apart and all three run in CI.
 
 It does not put the design on an FPGA. There is no timing closure figure, no
 resource count from a vendor tool and no measurement on a motor anywhere in this
-repository. The synthesis job elaborates the design through GHDL's synthesiser,
-which catches a construct that simulates and cannot be built; it is not a
-place-and-route and it makes no timing claim.
+repository.
+
+The synthesis step elaborates each unit through GHDL's synthesiser, which is what
+catches a construct that simulates and cannot be built. It is not a
+place-and-route and it makes no timing claim. At present it does not cover the
+whole design either.
+
+GHDL 5.0.1 raises an internal error, `TYPES.INTERNAL_ERROR` at
+`netlists-utils.adb:163`, on every unit that calls the arithmetic helpers in
+`rtl/foc_pkg.vhd`. That is a crash rather than a diagnostic: the tool does not
+say the RTL is unsynthesisable, it stops working. The helpers return an
+unconstrained `signed` whose width comes from a parameter, which is the same
+shape as `numeric_std.resize` and is ordinary VHDL-2008, so the fault is in the
+tool. It has not been worked around, because contorting correct and tested
+arithmetic to suit one open-source tool's internal error is a worse trade than
+saying plainly what is not covered.
+
+So the synthesis step covers three of the nine units, `pwm3ph`, `qei_decoder`
+and `axi4lite_regs`. The other six are elaborated only by the simulator. The
+step still earns its place: it lists the affected units explicitly and fails if
+a unit crashes that is not on the list, if a unit on the list starts working, or
+if any unit produces a real synthesis diagnostic. Vendor synthesis is the first
+item in docs/10-limitations-and-roadmap.md for this reason as well as for the
+timing report.
 
 docs/10-limitations-and-roadmap.md says the same thing at greater length and
 lists what would have to happen to change it.
