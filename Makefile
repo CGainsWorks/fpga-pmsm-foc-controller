@@ -166,7 +166,7 @@ synth: analyse
 # TEMPORARY.  Finds which construct GHDL cannot elaborate; see
 # sim/probe/synth_probe.vhd.  Reports and never fails, because its whole job is
 # to tell us something rather than to gate anything.  Delete with the probe.
-PROBES = probe_h_round_expr probe_h_sat_expr probe_h_over_expr probe_h_round_wide probe_h_sat_wide probe_h_over_wide
+PROBES = probe_s_current probe_s_literal probe_s_aggregate probe_s_clampwide
 
 synth-probe: | $(WORKDIR)
 	@$(GHDL) -a $(GHDL_FLAGS) rtl/foc_pkg.vhd > /dev/null; \
