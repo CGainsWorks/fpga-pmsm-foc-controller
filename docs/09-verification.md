@@ -39,9 +39,9 @@ Each layer catches something the others cannot.
 | `tb_cordic_rot` | 2000 rotations, exact against the model and within 2 LSB of real arithmetic, applied back to back so the pipeline runs at full rate | model and math_real |
 | `tb_cordic_vec` | 2000 vectorings, magnitude and argument, including vectors a few LSB long where the argument is badly conditioned | model and math_real |
 | `tb_clarke` | 600 pairs including a full electrical turn of a balanced set and inputs outside it that must saturate | model and math_real |
-| `tb_pi_axis` | 851 samples: into the limit, held there, error reversed, then a random tail with one-LSB errors | model |
-| `tb_svm` | 601 vectors, plus the centring property `max + min = top` on every one inside the linear range | model and property |
-| `tb_current_loop` | 401 updates through the whole datapath, checking id, iq, vd, vq and all three compare values | model |
+| `tb_pi_axis` | 850 samples: into the limit, held there, error reversed, then a random tail with one-LSB errors | model |
+| `tb_svm` | 600 vectors, plus the centring property `max + min = top` on every one inside the linear range | model and property |
+| `tb_current_loop` | 400 updates through the whole datapath, checking id, iq, vd, vq and all three compare values | model |
 | `tb_pwm3ph` | carrier period, high time in clocks, dead-time interval count and length, narrow-pulse behaviour, never-both-on on every clock | derived properties |
 | `tb_qei_decoder` | counting both ways, both wraps, index zeroing, the invalid-transition error, the speed estimate | exact integer expectations |
 | `tb_axi4lite_regs` | every register, byte strobes, the self-clearing command bit, read-only and unmapped writes, strict handshaking | protocol and map |
@@ -58,7 +58,7 @@ Every one of the block-level testbenches passes with the following bugs in place
 
 All four produce perfectly reasonable-looking outputs from every individual
 block and all four are caught by comparing the assembled datapath against the
-model on 401 updates that include a rotating machine and random angles. It checks
+model on 400 updates that include a rotating machine and random angles. It checks
 seven internal nodes per update rather than only the outputs, so a mismatch says
 which stage went wrong instead of only that the answer differs.
 
