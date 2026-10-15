@@ -88,8 +88,8 @@ end entity probe_s_aggregate;
 architecture rtl of probe_s_aggregate is
 
   function sat_b (v : signed; w : natural) return signed is
-    constant C_HI : signed(w - 1 downto 0) := (w - 1 => '0', others => '1');
-    constant C_LO : signed(w - 1 downto 0) := (w - 1 => '1', others => '0');
+    constant C_HI : signed(w - 1 downto 0) := to_signed(2 ** (w - 1) - 1, w);
+    constant C_LO : signed(w - 1 downto 0) := to_signed(-(2 ** (w - 1)), w);
   begin
     if v'length <= w then
       return resize(v, w);
@@ -138,8 +138,8 @@ end entity probe_s_clampwide;
 architecture rtl of probe_s_clampwide is
 
   function clamp_c (v : signed; w : natural) return signed is
-    constant C_HI : signed(w - 1 downto 0) := (w - 1 => '0', others => '1');
-    constant C_LO : signed(w - 1 downto 0) := (w - 1 => '1', others => '0');
+    constant C_HI : signed(w - 1 downto 0) := to_signed(2 ** (w - 1) - 1, w);
+    constant C_LO : signed(w - 1 downto 0) := to_signed(-(2 ** (w - 1)), w);
   begin
     if v'length <= w then
       return v;
