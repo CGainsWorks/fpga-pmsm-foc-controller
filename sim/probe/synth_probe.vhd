@@ -1,15 +1,18 @@
 -- -----------------------------------------------------------------------------
 -- synth_probe  -- TEMPORARY, not part of the design
 --
--- One minimal entity per construct, to find which of them GHDL 5.0.1 cannot
--- elaborate through its synthesiser.
+-- Bisecting the GHDL 5.0.1 synthesis crash by reduction.
 --
--- Two explanations fit the per-unit results equally well. Every unit that
--- crashes calls an arithmetic helper from rtl/foc_pkg.vhd, and every unit that
--- crashes also reaches ieee.numeric_std.shift_left or shift_right, because the
--- helpers use them internally. The two cannot be separated from the design
--- itself, so they are separated here instead: each probe exercises exactly one
--- construct and nothing else.
+-- The first round probed each construct on its own: the built-in resize, a
+-- shift by a literal, a shift by a generic, a signed multiply and all four
+-- arithmetic helpers from rtl/foc_pkg.vhd. The second round added the clock
+-- enable written into the edge condition, both ways round. All ten elaborate,
+-- so no single construct in the design is the cause and it has to be an
+-- interaction.
+--
+-- So this round takes the smallest crashing unit, clarke, copies its
+-- architecture verbatim, and removes one feature per variant. Whichever variant
+-- stops crashing names the cause.
 --
 -- Delete this file and the synth-probe target once the answer is known.
 -- -----------------------------------------------------------------------------
@@ -18,285 +21,7 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
--- 1. resize: a built-in whose result width comes from a parameter value.
-entity probe_resize is
-  port (
-    clk : in    std_logic;
-    d   : in    signed(23 downto 0);
-    q   : out   signed(15 downto 0)
-  );
-end entity probe_resize;
-
-architecture rtl of probe_resize is
-
-  signal r : signed(15 downto 0) := (others => '0');
-
-begin
-
-  p : process (clk) is
-  begin
-
-    if rising_edge(clk) then
-      r <= resize(d, 16);
-    end if;
-
-  end process p;
-
-  q <= r;
-
-end architecture rtl;
-
-library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
-
--- 2. shift_right by a literal.
-entity probe_shift_const is
-  port (
-    clk : in    std_logic;
-    d   : in    signed(23 downto 0);
-    q   : out   signed(23 downto 0)
-  );
-end entity probe_shift_const;
-
-architecture rtl of probe_shift_const is
-
-  signal r : signed(23 downto 0) := (others => '0');
-
-begin
-
-  p : process (clk) is
-  begin
-
-    if rising_edge(clk) then
-      r <= shift_right(d, 3);
-    end if;
-
-  end process p;
-
-  q <= r;
-
-end architecture rtl;
-
-library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
-
--- 3. shift_left of a to_signed literal by a generic, which is what the rounding
---    term in round_shr does.
-entity probe_shift_gen is
-  generic (
-    G_S : natural := 5
-  );
-  port (
-    clk : in    std_logic;
-    d   : in    signed(23 downto 0);
-    q   : out   signed(23 downto 0)
-  );
-end entity probe_shift_gen;
-
-architecture rtl of probe_shift_gen is
-
-  signal r : signed(23 downto 0) := (others => '0');
-
-begin
-
-  p : process (clk) is
-  begin
-
-    if rising_edge(clk) then
-      r <= d + shift_left(to_signed(1, 24), G_S - 1);
-    end if;
-
-  end process p;
-
-  q <= r;
-
-end architecture rtl;
-
-library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
-
--- 4. a signed multiply, with no helper and no shift.
-entity probe_mul is
-  port (
-    clk : in    std_logic;
-    d   : in    signed(23 downto 0);
-    e   : in    signed(17 downto 0);
-    q   : out   signed(41 downto 0)
-  );
-end entity probe_mul;
-
-architecture rtl of probe_mul is
-
-  signal r : signed(41 downto 0) := (others => '0');
-
-begin
-
-  p : process (clk) is
-  begin
-
-    if rising_edge(clk) then
-      r <= d * e;
-    end if;
-
-  end process p;
-
-  q <= r;
-
-end architecture rtl;
-
-library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
-
-library work;
-  use work.foc_pkg.all;
-
--- 5. round_shr: a helper whose result width comes from an operand's length.
-entity probe_round_shr is
-  port (
-    clk : in    std_logic;
-    d   : in    signed(23 downto 0);
-    q   : out   signed(23 downto 0)
-  );
-end entity probe_round_shr;
-
-architecture rtl of probe_round_shr is
-
-  signal r : signed(23 downto 0) := (others => '0');
-
-begin
-
-  p : process (clk) is
-  begin
-
-    if rising_edge(clk) then
-      r <= round_shr(d, 3);
-    end if;
-
-  end process p;
-
-  q <= r;
-
-end architecture rtl;
-
-library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
-
-library work;
-  use work.foc_pkg.all;
-
--- 6. sat_to: a helper whose result width comes from a parameter value.
-entity probe_sat_to is
-  port (
-    clk : in    std_logic;
-    d   : in    signed(23 downto 0);
-    q   : out   signed(15 downto 0)
-  );
-end entity probe_sat_to;
-
-architecture rtl of probe_sat_to is
-
-  signal r : signed(15 downto 0) := (others => '0');
-
-begin
-
-  p : process (clk) is
-  begin
-
-    if rising_edge(clk) then
-      r <= sat_to(d, 16);
-    end if;
-
-  end process p;
-
-  q <= r;
-
-end architecture rtl;
-
-library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
-
-library work;
-  use work.foc_pkg.all;
-
--- 7. wrap_to: a helper that slices a variable at a parameter-derived index.
-entity probe_wrap_to is
-  port (
-    clk : in    std_logic;
-    d   : in    signed(23 downto 0);
-    q   : out   signed(15 downto 0)
-  );
-end entity probe_wrap_to;
-
-architecture rtl of probe_wrap_to is
-
-  signal r : signed(15 downto 0) := (others => '0');
-
-begin
-
-  p : process (clk) is
-  begin
-
-    if rising_edge(clk) then
-      r <= wrap_to(d, 16);
-    end if;
-
-  end process p;
-
-  q <= r;
-
-end architecture rtl;
-
-library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
-
-library work;
-  use work.foc_pkg.all;
-
--- 8. overflows: a helper returning a boolean rather than an array.
-entity probe_overflows is
-  port (
-    clk : in    std_logic;
-    d   : in    signed(23 downto 0);
-    q   : out   std_logic
-  );
-end entity probe_overflows;
-
-architecture rtl of probe_overflows is
-
-  signal r : std_logic := '0';
-
-begin
-
-  p : process (clk) is
-  begin
-
-    if rising_edge(clk) then
-      if overflows(d, 16) then
-        r <= '1';
-      else
-        r <= '0';
-      end if;
-    end if;
-
-  end process p;
-
-  q <= r;
-
-end architecture rtl;
-
-library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
-
--- 9. a clock enable written into the edge condition, which is the form the six
---    crashing units use: if rising_edge(clk) and en = '1' then
+-- Control from the previous round: a clock enable in the edge condition.
 entity probe_ce_compound is
   port (
     clk : in    std_logic;
@@ -329,34 +54,379 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
--- 10. the same flip-flop with the enable nested inside the edge, which is the
---     canonical template every synthesiser recognises.
-entity probe_ce_nested is
+library work;
+  use work.foc_pkg.all;
+
+-- A. clarke's architecture, verbatim. Expected to crash.
+entity probe_c_full is
   port (
-    clk : in    std_logic;
-    en  : in    std_logic;
-    d   : in    signed(23 downto 0);
-    q   : out   signed(23 downto 0)
+    clk       : in    std_logic;
+    rst       : in    std_logic;
+    in_valid  : in    std_logic;
+    ia        : in    signed(C_W_DATA - 1 downto 0);
+    ib        : in    signed(C_W_DATA - 1 downto 0);
+    out_valid : out   std_logic;
+    ialpha    : out   signed(C_W_DATA - 1 downto 0);
+    ibeta     : out   signed(C_W_DATA - 1 downto 0);
+    sat_out   : out   std_logic
   );
-end entity probe_ce_nested;
+end entity probe_c_full;
 
-architecture rtl of probe_ce_nested is
+architecture rtl of probe_c_full is
 
-  signal r : signed(23 downto 0) := (others => '0');
+  constant C_W_SUM  : natural := C_W_DATA + 2;
+  constant C_W_PROD : natural := C_W_SUM + 16;
+
+  signal ial_r : signed(C_W_DATA - 1 downto 0) := (others => '0');
+  signal ibe_r : signed(C_W_DATA - 1 downto 0) := (others => '0');
+  signal sat_r : std_logic                     := '0';
+
+  signal vld : std_logic;
 
 begin
 
-  p : process (clk) is
+  p_clarke : process (clk) is
+
+    variable t : signed(C_W_SUM - 1 downto 0);
+    variable p : signed(C_W_PROD - 1 downto 0);
+
   begin
 
-    if rising_edge(clk) then
-      if en = '1' then
-        r <= d + 1;
+    if rising_edge(clk) and in_valid = '1' then
+      t := resize(ia, C_W_SUM) + shift_left(resize(ib, C_W_SUM), 1);
+      p := round_shr(t * to_signed(C_INV_SQRT3, 16), C_Q_TRIG);
+
+      ial_r <= ia;
+      ibe_r <= sat_to(p, C_W_DATA);
+
+      if overflows(p, C_W_DATA) then
+        sat_r <= '1';
+      else
+        sat_r <= '0';
       end if;
     end if;
 
-  end process p;
+  end process p_clarke;
 
-  q <= r;
+  p_valid : process (clk) is
+  begin
+
+    if rising_edge(clk) then
+      if rst = '1' then
+        vld <= '0';
+      else
+        vld <= in_valid;
+      end if;
+    end if;
+
+  end process p_valid;
+
+  ialpha    <= ial_r;
+  ibeta     <= ibe_r;
+  sat_out   <= sat_r;
+  out_valid <= vld;
+
+end architecture rtl;
+
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+
+library work;
+  use work.foc_pkg.all;
+
+-- B. A, with the clock enable taken out of the edge condition.
+entity probe_c_noce is
+  port (
+    clk       : in    std_logic;
+    rst       : in    std_logic;
+    in_valid  : in    std_logic;
+    ia        : in    signed(C_W_DATA - 1 downto 0);
+    ib        : in    signed(C_W_DATA - 1 downto 0);
+    out_valid : out   std_logic;
+    ialpha    : out   signed(C_W_DATA - 1 downto 0);
+    ibeta     : out   signed(C_W_DATA - 1 downto 0);
+    sat_out   : out   std_logic
+  );
+end entity probe_c_noce;
+
+architecture rtl of probe_c_noce is
+
+  constant C_W_SUM  : natural := C_W_DATA + 2;
+  constant C_W_PROD : natural := C_W_SUM + 16;
+
+  signal ial_r : signed(C_W_DATA - 1 downto 0) := (others => '0');
+  signal ibe_r : signed(C_W_DATA - 1 downto 0) := (others => '0');
+  signal sat_r : std_logic                     := '0';
+
+  signal vld : std_logic;
+
+begin
+
+  p_clarke : process (clk) is
+
+    variable t : signed(C_W_SUM - 1 downto 0);
+    variable p : signed(C_W_PROD - 1 downto 0);
+
+  begin
+
+    if rising_edge(clk) then
+      t := resize(ia, C_W_SUM) + shift_left(resize(ib, C_W_SUM), 1);
+      p := round_shr(t * to_signed(C_INV_SQRT3, 16), C_Q_TRIG);
+
+      ial_r <= ia;
+      ibe_r <= sat_to(p, C_W_DATA);
+
+      if overflows(p, C_W_DATA) then
+        sat_r <= '1';
+      else
+        sat_r <= '0';
+      end if;
+    end if;
+
+  end process p_clarke;
+
+  p_valid : process (clk) is
+  begin
+
+    if rising_edge(clk) then
+      if rst = '1' then
+        vld <= '0';
+      else
+        vld <= in_valid;
+      end if;
+    end if;
+
+  end process p_valid;
+
+  ialpha    <= ial_r;
+  ibeta     <= ibe_r;
+  sat_out   <= sat_r;
+  out_valid <= vld;
+
+end architecture rtl;
+
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+
+library work;
+  use work.foc_pkg.all;
+
+-- C. A, with the helpers replaced by the same arithmetic written inline.
+entity probe_c_nohelp is
+  port (
+    clk       : in    std_logic;
+    rst       : in    std_logic;
+    in_valid  : in    std_logic;
+    ia        : in    signed(C_W_DATA - 1 downto 0);
+    ib        : in    signed(C_W_DATA - 1 downto 0);
+    out_valid : out   std_logic;
+    ialpha    : out   signed(C_W_DATA - 1 downto 0);
+    ibeta     : out   signed(C_W_DATA - 1 downto 0);
+    sat_out   : out   std_logic
+  );
+end entity probe_c_nohelp;
+
+architecture rtl of probe_c_nohelp is
+
+  constant C_W_SUM  : natural := C_W_DATA + 2;
+  constant C_W_PROD : natural := C_W_SUM + 16;
+
+  signal ial_r : signed(C_W_DATA - 1 downto 0) := (others => '0');
+  signal ibe_r : signed(C_W_DATA - 1 downto 0) := (others => '0');
+  signal sat_r : std_logic                     := '0';
+
+  signal vld : std_logic;
+
+begin
+
+  p_clarke : process (clk) is
+
+    variable t : signed(C_W_SUM - 1 downto 0);
+    variable p : signed(C_W_PROD - 1 downto 0);
+
+  begin
+
+    if rising_edge(clk) and in_valid = '1' then
+      t := resize(ia, C_W_SUM) + shift_left(resize(ib, C_W_SUM), 1);
+      p := shift_right(t * to_signed(C_INV_SQRT3, 16)
+                       + to_signed(2 ** (C_Q_TRIG - 1), C_W_PROD), C_Q_TRIG);
+
+      ial_r <= ia;
+      ibe_r <= resize(p, C_W_DATA);
+
+      if p > 32767 or p < -32768 then
+        sat_r <= '1';
+      else
+        sat_r <= '0';
+      end if;
+    end if;
+
+  end process p_clarke;
+
+  p_valid : process (clk) is
+  begin
+
+    if rising_edge(clk) then
+      if rst = '1' then
+        vld <= '0';
+      else
+        vld <= in_valid;
+      end if;
+    end if;
+
+  end process p_valid;
+
+  ialpha    <= ial_r;
+  ibeta     <= ibe_r;
+  sat_out   <= sat_r;
+  out_valid <= vld;
+
+end architecture rtl;
+
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+
+library work;
+  use work.foc_pkg.all;
+
+-- D. A, with no process variables: the helpers are applied to expressions.
+entity probe_c_novar is
+  port (
+    clk       : in    std_logic;
+    rst       : in    std_logic;
+    in_valid  : in    std_logic;
+    ia        : in    signed(C_W_DATA - 1 downto 0);
+    ib        : in    signed(C_W_DATA - 1 downto 0);
+    out_valid : out   std_logic;
+    ialpha    : out   signed(C_W_DATA - 1 downto 0);
+    ibeta     : out   signed(C_W_DATA - 1 downto 0);
+    sat_out   : out   std_logic
+  );
+end entity probe_c_novar;
+
+architecture rtl of probe_c_novar is
+
+  constant C_W_SUM : natural := C_W_DATA + 2;
+
+  signal ial_r : signed(C_W_DATA - 1 downto 0) := (others => '0');
+  signal ibe_r : signed(C_W_DATA - 1 downto 0) := (others => '0');
+  signal sat_r : std_logic                     := '0';
+
+  signal vld : std_logic;
+
+begin
+
+  p_clarke : process (clk) is
+  begin
+
+    if rising_edge(clk) and in_valid = '1' then
+      ial_r <= ia;
+      ibe_r <= sat_to(round_shr((resize(ia, C_W_SUM)
+                                 + shift_left(resize(ib, C_W_SUM), 1))
+                                * to_signed(C_INV_SQRT3, 16), C_Q_TRIG),
+                      C_W_DATA);
+      sat_r <= '0';
+    end if;
+
+  end process p_clarke;
+
+  p_valid : process (clk) is
+  begin
+
+    if rising_edge(clk) then
+      if rst = '1' then
+        vld <= '0';
+      else
+        vld <= in_valid;
+      end if;
+    end if;
+
+  end process p_valid;
+
+  ialpha    <= ial_r;
+  ibeta     <= ibe_r;
+  sat_out   <= sat_r;
+  out_valid <= vld;
+
+end architecture rtl;
+
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+
+library work;
+  use work.foc_pkg.all;
+
+-- E. A, with no signal initialisers.
+entity probe_c_noinit is
+  port (
+    clk       : in    std_logic;
+    rst       : in    std_logic;
+    in_valid  : in    std_logic;
+    ia        : in    signed(C_W_DATA - 1 downto 0);
+    ib        : in    signed(C_W_DATA - 1 downto 0);
+    out_valid : out   std_logic;
+    ialpha    : out   signed(C_W_DATA - 1 downto 0);
+    ibeta     : out   signed(C_W_DATA - 1 downto 0);
+    sat_out   : out   std_logic
+  );
+end entity probe_c_noinit;
+
+architecture rtl of probe_c_noinit is
+
+  constant C_W_SUM  : natural := C_W_DATA + 2;
+  constant C_W_PROD : natural := C_W_SUM + 16;
+
+  signal ial_r : signed(C_W_DATA - 1 downto 0);
+  signal ibe_r : signed(C_W_DATA - 1 downto 0);
+  signal sat_r : std_logic;
+
+  signal vld : std_logic;
+
+begin
+
+  p_clarke : process (clk) is
+
+    variable t : signed(C_W_SUM - 1 downto 0);
+    variable p : signed(C_W_PROD - 1 downto 0);
+
+  begin
+
+    if rising_edge(clk) and in_valid = '1' then
+      t := resize(ia, C_W_SUM) + shift_left(resize(ib, C_W_SUM), 1);
+      p := round_shr(t * to_signed(C_INV_SQRT3, 16), C_Q_TRIG);
+
+      ial_r <= ia;
+      ibe_r <= sat_to(p, C_W_DATA);
+
+      if overflows(p, C_W_DATA) then
+        sat_r <= '1';
+      else
+        sat_r <= '0';
+      end if;
+    end if;
+
+  end process p_clarke;
+
+  p_valid : process (clk) is
+  begin
+
+    if rising_edge(clk) then
+      if rst = '1' then
+        vld <= '0';
+      else
+        vld <= in_valid;
+      end if;
+    end if;
+
+  end process p_valid;
+
+  ialpha    <= ial_r;
+  ibeta     <= ibe_r;
+  sat_out   <= sat_r;
+  out_valid <= vld;
 
 end architecture rtl;
