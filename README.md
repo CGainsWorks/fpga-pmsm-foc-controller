@@ -96,7 +96,10 @@ removes it. The stage count comes from requiring the unresolved residual,
 so the interface and not the arithmetic is what limits accuracy. The iteration
 reaches 1.7433 rad, more than a quadrant, so one exact quarter-turn fold covers
 the circle with 0.17 rad of margin. Worst measured rotation error over 2000
-vectors: **0.63 LSB**, against a derived bound of 1.64.
+vectors: **0.63 LSB**, against a derived bound of 1.64. Every stage is
+clock-enabled by the valid bit travelling with it, so the pipeline toggles for
+66 clocks in 5000 rather than continuously, which is most of the block's
+dynamic power.
 [docs/03](docs/03-cordic.md)
 
 **Two current sensors, not three.** With an isolated star point Kirchhoff gives

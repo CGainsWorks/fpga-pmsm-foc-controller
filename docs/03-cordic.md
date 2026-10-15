@@ -126,6 +126,27 @@ a relative error of 1.8e-5, which showed up in the model as a systematic
 therefore visible to anything downstream that integrates. Two extra bits on one
 constant removed it.
 
+## Dynamic power
+
+Every pipeline register is clock-enabled by the valid bit travelling with it, so
+a stage holding nothing holds its value instead of shifting. That is what a
+flip-flop's enable input is for and it costs nothing on an FPGA, where the
+enable is already there.
+
+It is worth a number. One control update occupies 66 of the 5000 clocks in a PWM
+period, so without the enable the three instances would toggle 3780 register
+bits continuously to do 1.3 per cent of a period's useful work. Dynamic power
+goes as the switching activity, so the enable removes about 98.7 per cent of the
+datapath's dynamic power. On a drive that is the difference between a block you
+can leave running and one you have to think about.
+
+The same enable removes a second problem that has nothing to do with power: a
+stage never latches an undefined value, so nothing downstream of the pipeline
+ever compares against one while the design sits waiting to be configured. The
+output registers carry a power-up value for the same reason, declared on the
+signal rather than on the port because that is the state a synthesiser will
+actually put into the configuration bitstream.
+
 ## Cost
 
 Per instance, at 18 stages: 18 registers of 24 + 24 + 22 = 70 bits, so about 1260

@@ -95,6 +95,17 @@ proceeds at `L/R = 4 ms`. See docs/05 and
 
 ## What the models are not
 
+The closed-loop testbench runs a 250-step carrier on a 10 MHz clock rather than
+2500 on 100 MHz. The control period is still 2 * top * T_clk = 50 us, so the
+gains, the machine and every prediction are unchanged; what drops is the
+modulator resolution. focmodel puts the resulting change in settled current
+below 1e-4 per unit, twenty times inside the tolerance the testbench asserts,
+and what it buys is a tenfold cut in the number of clock edges to simulate. The
+modulator's own timing is checked at the real ratio in `tb_pwm3ph`, which is
+where it belongs. The testbench asserts the carrier and the clock really do give
+the 50 us period the gains were derived for, so this cannot silently become a
+test of a different loop.
+
 The inverter in the closed-loop testbench is averaged over one PWM period.
 Dead time is set to zero there and that is stated in the testbench header rather
 than left to be discovered: an averaged plant cannot represent dead-time

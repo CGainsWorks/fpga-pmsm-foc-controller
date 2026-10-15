@@ -55,6 +55,18 @@ TBSRC = \
 	tb/tb_axi4lite_regs.vhd \
 	tb/tb_foc_closed_loop.vhd
 
+# Every synthesisable unit, leaves before the things that instantiate them.
+SYNTH_UNITS = \
+	cordic \
+	clarke \
+	pi_axis \
+	svm \
+	pwm3ph \
+	qei_decoder \
+	axi4lite_regs \
+	current_loop \
+	foc_top
+
 TESTS = \
 	tb_cordic_rot \
 	tb_cordic_vec \
@@ -104,12 +116,27 @@ sim: analyse vectors
 sim-one: analyse vectors
 	$(GHDL) --elab-run $(GHDL_FLAGS) $(TB) $(GHDL_RUN)
 
-# Synthesis smoke test.  This does not produce a bitstream and makes no timing
-# claim; it proves the design elaborates through a synthesiser, which is what
-# catches a construct that simulates and cannot be built.
+# Synthesis smoke test.  This produces no bitstream and makes no timing claim;
+# it proves the RTL elaborates through a synthesiser, which is what catches a
+# construct that simulates and cannot be built.
+#
+# Each unit is elaborated on its own rather than only the top, for two reasons.
+# A failure then names the entity instead of the design; the leaves are also
+# where the arithmetic actually lives: the top level is wiring and one strobe.
 synth: analyse
-	$(GHDL) --synth $(GHDL_FLAGS) foc_top > $(WORKDIR)/foc_top.synth.vhd
-	@echo "synthesis elaborated, netlist in $(WORKDIR)/foc_top.synth.vhd"
+	@fail=""; \
+	for u in $(SYNTH_UNITS); do \
+		if $(GHDL) --synth $(GHDL_FLAGS) $$u \
+			> $(WORKDIR)/$$u.synth.vhd 2> $(WORKDIR)/$$u.synth.log; then \
+			echo "  ok    $$u"; \
+		else \
+			echo "  FAIL  $$u"; \
+			sed 's/^/          /' $(WORKDIR)/$$u.synth.log | head -12; \
+			fail="$$fail $$u"; \
+		fi; \
+	done; \
+	if [ -n "$$fail" ]; then echo "synthesis failed for:$$fail"; exit 1; fi; \
+	echo "every unit elaborated through the synthesiser"
 
 lint: lint-vhdl lint-py
 
