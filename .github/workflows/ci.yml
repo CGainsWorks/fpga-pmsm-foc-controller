@@ -5,7 +5,7 @@ name: ci
 # It runs everything: the Python model test suite, the style checks, a
 # regeneration check on both generated VHDL files, the check that every figure
 # in the README still comes from the models, all ten testbenches under GHDL and
-# a synthesis elaboration of the top level. Nothing in this repository needs
+# a synthesis elaboration of every unit. Nothing in this repository needs
 # hardware to be checked, because nothing in it claims a hardware result.
 #
 # What it does not do is put the design on an FPGA. No timing closure figure, no

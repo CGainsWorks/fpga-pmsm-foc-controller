@@ -5,7 +5,7 @@
 #   make vectors    regenerate the testbench stimulus from the golden models
 #   make sim        analyse and run every testbench
 #   make sim-one TB=tb_cordic_rot     one testbench
-#   make synth      synthesis smoke test of the top level
+#   make synth      elaborate every unit through the synthesiser
 #   make lint       VHDL style and Python lint
 #   make test       the Python model test suite
 #   make clean
