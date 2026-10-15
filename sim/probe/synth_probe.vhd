@@ -290,3 +290,73 @@ begin
   q <= r;
 
 end architecture rtl;
+
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+
+-- 9. a clock enable written into the edge condition, which is the form the six
+--    crashing units use: if rising_edge(clk) and en = '1' then
+entity probe_ce_compound is
+  port (
+    clk : in    std_logic;
+    en  : in    std_logic;
+    d   : in    signed(23 downto 0);
+    q   : out   signed(23 downto 0)
+  );
+end entity probe_ce_compound;
+
+architecture rtl of probe_ce_compound is
+
+  signal r : signed(23 downto 0) := (others => '0');
+
+begin
+
+  p : process (clk) is
+  begin
+
+    if rising_edge(clk) and en = '1' then
+      r <= d + 1;
+    end if;
+
+  end process p;
+
+  q <= r;
+
+end architecture rtl;
+
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+
+-- 10. the same flip-flop with the enable nested inside the edge, which is the
+--     canonical template every synthesiser recognises.
+entity probe_ce_nested is
+  port (
+    clk : in    std_logic;
+    en  : in    std_logic;
+    d   : in    signed(23 downto 0);
+    q   : out   signed(23 downto 0)
+  );
+end entity probe_ce_nested;
+
+architecture rtl of probe_ce_nested is
+
+  signal r : signed(23 downto 0) := (others => '0');
+
+begin
+
+  p : process (clk) is
+  begin
+
+    if rising_edge(clk) then
+      if en = '1' then
+        r <= d + 1;
+      end if;
+    end if;
+
+  end process p;
+
+  q <= r;
+
+end architecture rtl;
