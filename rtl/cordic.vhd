@@ -82,6 +82,17 @@ architecture rtl of cordic is
   signal y : xy_array_t := (others => (others => '0'));
   signal z : z_array_t  := (others => (others => '0'));
 
+  -- The output register, kept internal so that its power-up value sits on the
+  -- flip-flop rather than on the port, which is where a synthesiser will honour
+  -- it.  It matters because the stage is clock-enabled: until the first
+  -- transaction arrives nothing drives it and anything reading it would
+  -- otherwise see an undefined value for as long as the design sits waiting to
+  -- be configured.
+  signal x_r   : signed(C_W_DATA - 1 downto 0) := (others => '0');
+  signal y_r   : signed(C_W_DATA - 1 downto 0) := (others => '0');
+  signal ang_r : signed(C_W_ANG - 1 downto 0)  := (others => '0');
+  signal sat_r : std_logic                     := '0';
+
   -- One bit for the input register, C_N_STAGES for the iterations, one for the
   -- output register.
   signal vld : std_logic_vector(C_N_STAGES + 1 downto 0);
@@ -212,14 +223,14 @@ begin
         ry := round_shr(resize(y(C_N_STAGES), C_W_PROD), C_GUARD);
       end if;
 
-      x_out   <= sat_to(rx, C_W_DATA);
-      y_out   <= sat_to(ry, C_W_DATA);
-      ang_out <= wrap_to(round_shr(z(C_N_STAGES), C_Z_SHIFT), C_W_ANG);
+      x_r   <= sat_to(rx, C_W_DATA);
+      y_r   <= sat_to(ry, C_W_DATA);
+      ang_r <= wrap_to(round_shr(z(C_N_STAGES), C_Z_SHIFT), C_W_ANG);
 
       if overflows(rx, C_W_DATA) or overflows(ry, C_W_DATA) then
-        sat_out <= '1';
+        sat_r <= '1';
       else
-        sat_out <= '0';
+        sat_r <= '0';
       end if;
     end if;
 
@@ -246,6 +257,10 @@ begin
 
   end process p_valid;
 
+  x_out     <= x_r;
+  y_out     <= y_r;
+  ang_out   <= ang_r;
+  sat_out   <= sat_r;
   out_valid <= vld(vld'high);
 
   -- Simulation-only guard.  In rotation mode the residual is monotonically

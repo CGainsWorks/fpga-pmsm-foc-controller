@@ -113,8 +113,8 @@ architecture rtl of current_loop is
   signal vc_sat   : std_logic;
 
   signal lm_valid : std_logic;
-  signal mag_lim  : signed(C_W_DATA - 1 downto 0);
-  signal psi      : signed(C_W_ANG - 1 downto 0);
+  signal mag_lim  : signed(C_W_DATA - 1 downto 0) := (others => '0');
+  signal psi      : signed(C_W_ANG - 1 downto 0)  := (others => '0');
 
   signal ip_valid : std_logic;
   signal valpha   : signed(C_W_DATA - 1 downto 0);

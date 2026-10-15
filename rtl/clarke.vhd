@@ -55,6 +55,13 @@ architecture rtl of clarke is
   constant C_W_SUM  : natural := C_W_DATA + 2;
   constant C_W_PROD : natural := C_W_SUM + 16;
 
+  -- Power-up values on the output register, for the reason given in
+  -- rtl/cordic.vhd: the stage is clock-enabled and nothing drives it until the
+  -- first sample arrives.
+  signal ial_r : signed(C_W_DATA - 1 downto 0) := (others => '0');
+  signal ibe_r : signed(C_W_DATA - 1 downto 0) := (others => '0');
+  signal sat_r : std_logic                     := '0';
+
   signal vld : std_logic;
 
 begin
@@ -70,13 +77,13 @@ begin
       t := resize(ia, C_W_SUM) + shift_left(resize(ib, C_W_SUM), 1);
       p := round_shr(t * to_signed(C_INV_SQRT3, 16), C_Q_TRIG);
 
-      ialpha <= ia;
-      ibeta  <= sat_to(p, C_W_DATA);
+      ial_r <= ia;
+      ibe_r <= sat_to(p, C_W_DATA);
 
       if overflows(p, C_W_DATA) then
-        sat_out <= '1';
+        sat_r <= '1';
       else
-        sat_out <= '0';
+        sat_r <= '0';
       end if;
     end if;
 
@@ -95,6 +102,9 @@ begin
 
   end process p_valid;
 
+  ialpha    <= ial_r;
+  ibeta     <= ibe_r;
+  sat_out   <= sat_r;
   out_valid <= vld;
 
 end architecture rtl;

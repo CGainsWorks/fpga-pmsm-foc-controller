@@ -1,18 +1,37 @@
 name: ci
 
-# What CI can and cannot do here.
+# What CI does here.
 #
 # It runs everything: the Python model test suite, the style checks, a
-# regeneration check on both generated VHDL files, all ten testbenches under
-# GHDL and a synthesis elaboration of the top level.  Nothing in this repository
-# needs hardware to be checked, because nothing in it claims a hardware result.
+# regeneration check on both generated VHDL files, the check that every figure
+# in the README still comes from the models, all ten testbenches under GHDL and
+# a synthesis elaboration of the top level. Nothing in this repository needs
+# hardware to be checked, because nothing in it claims a hardware result.
 #
-# What it does not do is put the design on an FPGA.  No timing closure figure,
-# no resource count from a vendor tool and no measurement on a motor appears
-# anywhere and docs/10-limitations-and-roadmap.md says so in the same words.
-# The synthesis job below elaborates the design through GHDL's synthesiser,
-# which catches a construct that simulates and cannot be built; it is not a
-# place-and-route and it makes no timing claim.
+# What it does not do is put the design on an FPGA. No timing closure figure, no
+# resource count from a vendor tool and no measurement on a motor appears
+# anywhere and docs/10-limitations-and-roadmap.md says so in the same words. The
+# synthesis step elaborates the design through GHDL's synthesiser, which catches
+# a construct that simulates and cannot be built; it is not a place-and-route
+# and it makes no timing claim.
+#
+# Why it is one job and not several.
+#
+# Runner time is billed per job, so two jobs running in parallel for a minute
+# each cost two minutes, while one job doing the same work sequentially costs
+# one. The whole run takes well under a minute of simulation, so there is
+# nothing to gain from splitting it and a factor of two to lose. Three further
+# economies, in order of how much they save:
+#
+#   timeout-minutes caps a hung simulation at 15 minutes instead of the six
+#   hours a runner will otherwise sit there for. This is the one that matters:
+#   every other saving here is seconds, that one is hours.
+#
+#   concurrency with cancel-in-progress stops a superseded push from finishing.
+#   Pushing three times in a minute then costs one run, not three.
+#
+#   the cheap checks run before GHDL is installed, so a lint or model failure
+#   never pays for the toolchain download.
 
 on:
   push:
@@ -25,9 +44,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  models:
-    name: models, style and generated files
+  check:
+    name: models, testbenches and synthesis
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
     steps:
       - uses: actions/checkout@v4
 
@@ -42,6 +63,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # Cheapest first. None of these needs GHDL, so a failure here costs
+      # nothing but the checkout.
       - name: Python style
         run: ruff check .
 
@@ -62,32 +85,20 @@ jobs:
       - name: README numbers are the model's numbers
         run: python scripts/check_claims.py
 
-  simulate:
-    name: simulate and synthesise
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
       - uses: ghdl/setup-ghdl@v1
         with:
           version: "5.0.1"
           backend: llvm
 
       - name: Versions
-        run: |
-          ghdl --version
-          python --version
+        run: ghdl --version
 
       - name: Generate the testbench vectors
         run: make vectors PYTHON=python
 
-      # Ten self-checking testbenches.  Each one counts its comparisons, prints
-      # the count and fails the simulation if any comparison did not hold or if
-      # it managed to run no comparisons at all.
+      # Ten self-checking testbenches. Each counts its comparisons, prints the
+      # count and fails the simulation if any comparison did not hold or if it
+      # managed to run no comparisons at all.
       - name: Run every testbench
         run: make sim PYTHON=python
 

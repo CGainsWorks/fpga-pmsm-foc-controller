@@ -80,11 +80,23 @@ architecture rtl of svm is
 
   type v3_t is array (0 to 2) of signed(C_W_V - 1 downto 0);
 
+  type cmp3_t is array (0 to 2) of unsigned(G_PWM_BITS - 1 downto 0);
+
   signal v_r   : v3_t;
   signal off_r : signed(C_W_OFF - 1 downto 0);
   signal top_r : unsigned(G_PWM_BITS - 1 downto 0);
   signal vld1  : std_logic;
   signal vld2  : std_logic;
+
+  -- The compare values are registered internally with a power-up value rather
+  -- than driven straight from the clock-enabled process.  The modulator holds
+  -- them across the whole PWM period and reads them at every trough, including
+  -- the troughs before the loop has produced its first result, so they have to
+  -- mean something from configuration onwards.  A half-rail duty would look
+  -- more neutral than zero and is not: zero is all three legs on the same rail,
+  -- which is a zero vector and applies no voltage to the machine at all.
+  signal cmp_r  : cmp3_t    := (others => (others => '0'));
+  signal over_r : std_logic := '0';
 
 begin
 
@@ -166,28 +178,19 @@ begin
           cmp := unsigned(resize(c, G_PWM_BITS));
         end if;
 
-        case k is
-
-          when 0 =>
-
-            cmp_a <= cmp;
-
-          when 1 =>
-
-            cmp_b <= cmp;
-
-          when others =>
-
-            cmp_c <= cmp;
-
-        end case;
+        cmp_r(k) <= cmp;
 
       end loop;
 
-      over_mod <= ovf;
+      over_r <= ovf;
     end if;
 
   end process p_stage2;
+
+  cmp_a    <= cmp_r(0);
+  cmp_b    <= cmp_r(1);
+  cmp_c    <= cmp_r(2);
+  over_mod <= over_r;
 
   p_valid : process (clk) is
   begin
