@@ -132,6 +132,12 @@ package machine_pkg is
   constant C_KI_Q     : integer := {ki_q};
   constant C_VMAX_Q   : integer := {vmax_q};
 
+  -- The encoder: lines per revolution, counts per revolution after x4
+  -- decoding and the QEI_SCALE register value that maps a count to angle.
+  constant C_ENC_LINES : natural := {enc_lines};
+  constant C_QEI_CPR   : natural := {qei_cpr};
+  constant C_QEI_SCALE : natural := {qei_scale};
+
   -- Predicted 10 to 90 per cent rise time of the closed current loop.  The
   -- continuous design gives the first figure; the exact sampled analysis of the
   -- same gains, including the one-sample computation delay, gives the second,
@@ -158,6 +164,9 @@ def render_machine() -> str:
         kp_q=P.KP_Q,
         ki_q=P.KI_Q,
         vmax_q=P.V_MAX_Q,
+        enc_lines=P.ENC_LINES,
+        qei_cpr=P.QEI_CPR,
+        qei_scale=P.QEI_SCALE,
         rise_cont=rise_time_continuous(),
         rise_disc=rise_time_discrete(1),
     )

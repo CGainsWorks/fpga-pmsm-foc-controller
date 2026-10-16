@@ -92,6 +92,13 @@ DEADTIME_CYC = round(DEADTIME_NS * 1e-9 * F_CLK)
 ADC_BITS = 12
 ADC_FULL_SCALE_PU = 2.0   # the ADC spans +/- 2 pu of phase current
 
+# Incremental encoder.  See docs/07-encoder.md.  Four counts per line from x4
+# decoding and the angle scale that maps a count to a 32-bit fraction of an
+# electrical turn, as written to the QEI_CPR and QEI_SCALE registers.
+ENC_LINES = 2500
+QEI_CPR = 4 * ENC_LINES                          # 10000 counts per revolution
+QEI_SCALE = round(POLE_PAIRS * 2**32 / QEI_CPR)  # 1717987
+
 # Per-unit machine constants: v_pu = R_pu * i_pu + L_pu * d(i_pu)/dt
 R_PU = R_S * I_BASE / V_BASE
 L_PU = L_D * I_BASE / V_BASE          # seconds

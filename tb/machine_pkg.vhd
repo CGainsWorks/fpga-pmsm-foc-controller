@@ -32,6 +32,12 @@ package machine_pkg is
   constant C_KI_Q     : integer := 296;
   constant C_VMAX_Q   : integer := 8192;
 
+  -- The encoder: lines per revolution, counts per revolution after x4
+  -- decoding and the QEI_SCALE register value that maps a count to angle.
+  constant C_ENC_LINES : natural := 2500;
+  constant C_QEI_CPR   : natural := 10000;
+  constant C_QEI_SCALE : natural := 1717987;
+
   -- Predicted 10 to 90 per cent rise time of the closed current loop.  The
   -- continuous design gives the first figure; the exact sampled analysis of the
   -- same gains, including the one-sample computation delay, gives the second,
