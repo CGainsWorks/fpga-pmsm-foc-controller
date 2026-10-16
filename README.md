@@ -98,7 +98,7 @@ reaches 1.7433 rad, more than a quadrant, so one exact quarter-turn fold covers
 the circle with 0.17 rad of margin. Worst measured rotation error over 2000
 vectors: **0.63 LSB**, against a derived bound of 1.64. Every stage is
 clock-enabled by the valid bit travelling with it, so the pipeline toggles for
-66 clocks in 5000 rather than continuously, which is most of the block's
+92 clocks in 5000 rather than continuously, which is most of the block's
 dynamic power.
 [docs/03](docs/03-cordic.md)
 
@@ -147,11 +147,12 @@ no anti-alias filter anywhere: a filter would have solved the same problem by
 adding phase lag to the feedback path, which is the one thing a current loop
 cannot afford.
 
-**Where the delay actually goes.** The datapath takes 66 clocks, 0.66 us, which is
-0.076 degrees of phase at the 318 Hz closed-loop bandwidth. The sample-to-apply
+**Where the delay actually goes.** The datapath takes 92 clocks, 0.92 us, which is
+0.105 degrees of phase at the 318 Hz closed-loop bandwidth. The sample-to-apply
 delay is 1.5 sample periods, 75 us, which is 8.6 degrees. The arithmetic
-contributes **one hundredth** of the loop delay, which is the argument for putting
-it in fabric stated as a number.
+contributes **about one per cent** of the loop delay, which is the argument for
+putting it in fabric stated as a number. The 92 clocks are what pipelining every
+stage for a 100 MHz clock costs; `tb_current_loop` measures them on every update.
 
 ---
 

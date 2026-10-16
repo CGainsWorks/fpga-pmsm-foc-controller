@@ -115,7 +115,7 @@ def cordic(mode: str, x_in: int, y_in: int, ang_in: int, compensate: bool = True
 
 
 # The pipeline depth the RTL presents: one input/fold register, one register per
-# iteration, one output register.
-LATENCY = 1 + N_STAGES + 1
+# iteration and three output stages (multiply, round, saturate).
+LATENCY = 1 + N_STAGES + 3
 
 assert W_XY == W_DATA + GUARD_BITS + 2, "internal width must carry 2 growth bits"

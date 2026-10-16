@@ -113,11 +113,11 @@ into the voltage limiter: see docs/05.
 ### The angle must be the same angle
 
 Both transforms use the angle captured at the sampling instant, held in one
-register for the 66 clocks the datapath takes. If the forward rotation used one
+register for the 92 clocks the datapath takes. If the forward rotation used one
 angle and the reverse another, the two would not compose to the identity and the
 controller would be regulating in a frame that was not the frame it applied its
-answer in. At 3000 rpm the rotor moves 0.63 degrees in 66 clocks, which sounds
-negligible and is not: it would put a systematic cross-coupling between the axes
+answer in. At 3000 rpm the rotor moves 0.066 electrical degrees in 92 clocks,
+which sounds negligible and is not: it would put a systematic cross-coupling between the axes
 that no amount of integral gain would remove, because it is a rotation and not an
 offset. `tb_current_loop` is the testbench that catches this, because every
 block-level test passes with the bug in place.

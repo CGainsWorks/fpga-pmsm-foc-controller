@@ -13,10 +13,12 @@
 -- which stage went wrong rather than only that the answer differs.
 --
 -- One control update is in flight at a time, which is what the design assumes
--- and what the hardware does: the modulator strobes once per PWM period, 2500
--- clocks apart, against a loop latency of 66.  The testbench holds to that,
+-- and what the hardware does: the modulator strobes once per PWM period, 5000
+-- clocks apart, against a loop latency of 92.  The testbench holds to that,
 -- waiting for each result before presenting the next sample and the overrun
--- flag in the status word is what would catch a system that did not.
+-- flag in the status word is what would catch a system that did not.  It also
+-- counts the clocks each result takes and checks them against C_LOOP_LATENCY,
+-- since that is the figure the documentation quotes.
 -- -----------------------------------------------------------------------------
 
 library ieee;
@@ -134,6 +136,7 @@ begin
     variable ecc  : integer;
     variable errs : natural := 0;
     variable n    : natural := 0;
+    variable lat  : natural;
 
   begin
 
@@ -185,7 +188,19 @@ begin
       wait until rising_edge(clk);
       sample_valid <= '0';
 
-      wait until rising_edge(clk) and out_valid = '1';
+      -- Count the clocks to the answer.  The documentation quotes this figure,
+      -- so it is checked rather than assumed.
+      lat := 0;
+
+      loop
+
+        wait until rising_edge(clk);
+        lat := lat + 1;
+        exit when out_valid = '1';
+
+      end loop;
+
+      check_int("latency", lat, C_LOOP_LATENCY, errs);
 
       check_int("id", to_integer(id_meas), eid, errs);
       check_int("iq", to_integer(iq_meas), eiq, errs);
@@ -200,7 +215,7 @@ begin
 
     file_close(f);
     check_true("no overrun was flagged", sat_flags(0) = '0', errs);
-    finish_report("tb_current_loop", errs, 7 * n);
+    finish_report("tb_current_loop", errs, 8 * n);
     test_runner_cleanup(runner);
     wait;
 

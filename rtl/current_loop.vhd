@@ -26,12 +26,13 @@
 -- addition is a plain 16-bit add: the binary angular measure is a residue system
 -- modulo one turn, so it wraps correctly with no comparison and no correction.
 --
--- Latency 66 clocks or 0.66 us at 100 MHz, against a 50 us control period.
--- Expressed as loop phase lag at the 318 Hz closed-loop bandwidth that is 0.076
--- degrees, which is why no attempt is made to shorten it.  The delay that
--- actually matters is the one and a half sample periods between taking the
--- current sample and the centre of the PWM period the answer is applied in and
--- that is 8.6 degrees, a hundred times larger.  Moving the transform arithmetic
+-- Latency 92 clocks or 0.92 us at 100 MHz, against a 50 us control period, as
+-- C_LOOP_LATENCY records and tb_current_loop measures.  Expressed as loop phase
+-- lag at the 318 Hz closed-loop bandwidth that is 0.105 degrees, which is why
+-- the stages are pipelined for the clock rather than squeezed for latency.  The
+-- delay that actually matters is the one and a half sample periods between
+-- taking the current sample and the centre of the PWM period the answer is
+-- applied in and that is 8.6 degrees, eighty times larger.  Moving the transform arithmetic
 -- into hardware is what makes the first number negligible and leaves only the
 -- second, which is set by the modulator and not by the arithmetic.
 --

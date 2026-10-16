@@ -52,6 +52,12 @@ package foc_pkg is
   constant C_Q_KI  : natural := 14;              -- Ki in Q1.14, range [-2, +2)
   constant C_W_ACC : natural := 32;              -- integrator, Q?.27
 
+  -- Clocks from a sample entering current_loop to its compare values, the sum
+  -- of the stage latencies: Clarke 3, three CORDICs at 22, PI 9, the magnitude
+  -- limit 1 and the modulator 13.  tb_current_loop measures it on every update
+  -- and the documentation quotes it, so it is written down once, here.
+  constant C_LOOP_LATENCY : natural := 92;
+
   subtype data_t is signed(C_W_DATA - 1 downto 0);
 
   subtype angle_t is signed(C_W_ANG - 1 downto 0);

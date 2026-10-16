@@ -133,11 +133,11 @@ a stage holding nothing holds its value instead of shifting. That is what a
 flip-flop's enable input is for and it costs nothing on an FPGA, where the
 enable is already there.
 
-It is worth a number. One control update occupies 66 of the 5000 clocks in a PWM
-period, so without the enable the three instances would toggle 3780 register
-bits continuously to do 1.3 per cent of a period's useful work. Dynamic power
-goes as the switching activity, so the enable removes about 98.7 per cent of the
-datapath's dynamic power. On a drive that is the difference between a block you
+It is worth a number. One control update occupies 92 of the 5000 clocks in a PWM
+period, so without the enable the three instances would toggle 3780 iteration
+register bits continuously to do 1.8 per cent of a period's useful work. Dynamic
+power goes as the switching activity, so the enable removes about 98 per cent of
+the datapath's dynamic power. On a drive that is the difference between a block you
 can leave running and one you have to think about.
 
 The same enable removes a second problem that has nothing to do with power: a
@@ -150,8 +150,12 @@ actually put into the configuration bitstream.
 ## Cost
 
 Per instance, at 18 stages: 18 registers of 24 + 24 + 22 = 70 bits, so about 1260
-flip-flops and a similar number of LUTs for the adders, plus two DSP slices for
-the output gain compensation. The design instantiates three.
+flip-flops and a similar number of LUTs for the adders, plus two multiplies for
+the output gain compensation. A 24 by 18 multiply is one DSP48 slice on a Xilinx
+part and two 18 by 18 blocks on the ECP5 the open flow targets. The three output
+stages (multiply, round, saturate) add about 250 flip-flops. The design
+instantiates three. Measured resource figures for the whole design, from the
+open tools, are in [fpga/ecp5/results.md](../fpga/ecp5/results.md).
 
 That is more than it needs to be. Each instance is used once per 5000 clocks, so
 a folded implementation reusing a single stage 18 times would cost about a

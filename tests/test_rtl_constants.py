@@ -51,6 +51,7 @@ def consts() -> dict[str, str]:
         ("C_Q_KP", P.Q_KP),
         ("C_Q_KI", P.Q_KI),
         ("C_W_ACC", P.W_ACC),
+        ("C_LOOP_LATENCY", P.LOOP_LATENCY),
     ],
 )
 def test_scalar_constant_matches(consts: dict[str, str], name: str,

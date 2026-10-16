@@ -6,7 +6,7 @@
 --
 -- The only sequencing in the whole design lives here and it is one signal.  The
 -- modulator issues its sample strobe at the carrier trough; that strobe latches
--- the two phase currents and the rotor angle, starts the current loop and 66
+-- the two phase currents and the rotor angle, starts the current loop and 92
 -- clocks later the loop hands three compare values back to the modulator, which
 -- takes them at the next trough.  There is no scheduler, no interrupt and no
 -- software in the loop and the control period is therefore exactly the PWM

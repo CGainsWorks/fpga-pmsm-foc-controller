@@ -26,6 +26,12 @@ Q_KP = 12             # proportional gain in Q3.12, range [-8, +8)
 W_KI = 16
 Q_KI = 14             # integral gain in Q1.14, range [-2, +2)
 W_ACC = 32            # PI integrator accumulator
+
+# Clocks from a sample entering the current loop to its compare values.  A
+# property of the RTL pipeline rather than of the arithmetic, kept here so that
+# the documentation figures derived from it are checked against the same number
+# tb_current_loop measures.  See rtl/foc_pkg.vhd.
+LOOP_LATENCY = 92
 Q_ACC = Q_DATA + Q_KI  # = 27, the natural format of the Ki * e product
 
 # Guard bits carried through the CORDIC over the input format.

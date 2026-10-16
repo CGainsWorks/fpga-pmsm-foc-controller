@@ -20,7 +20,7 @@
 --   vector_mode  s = -sign(y), drives y to zero, so x_out is the magnitude of
 --                (x_in, y_in) and ang_out is its argument.
 --
--- Latency C_N_STAGES + 2 clocks, one result per clock.  The design instantiates
+-- Latency C_N_STAGES + 4 clocks, one result per clock.  The design instantiates
 -- three of these and uses each once per 2500 clocks, so a folded single-stage
 -- version would be far smaller; see docs/10-limitations-and-roadmap.md.  The
 -- pipelined form is kept because it is what lets one instance serve many axes.
@@ -32,9 +32,9 @@
 -- so a stage with nothing in it holds instead of shifting.  That is what a
 -- flip-flop's enable input is for and it costs nothing on an FPGA.  At one
 -- control update per 5000 clocks it is the difference between 54 stages
--- toggling continuously and toggling for 66 clocks in 5000, which is most of
+-- toggling continuously and toggling for 92 clocks in 5000, which is most of
 -- the dynamic power of the block.  It also makes the design cheap to simulate,
--- which is what lets the closed-loop testbench afford 27 ms of machine.
+-- which is what lets the closed-loop testbench afford tens of ms of machine.
 -- -----------------------------------------------------------------------------
 
 library ieee;
@@ -93,9 +93,18 @@ architecture rtl of cordic is
   signal ang_r : signed(C_W_ANG - 1 downto 0)  := (others => '0');
   signal sat_r : std_logic                     := '0';
 
-  -- One bit for the input register, C_N_STAGES for the iterations, one for the
-  -- output register.
-  signal vld : std_logic_vector(C_N_STAGES + 1 downto 0);
+  -- The gain compensation, split so that the multiply, the rounding add and the
+  -- saturating compare each have a clock of their own.
+  signal px_r  : signed(C_W_PROD - 1 downto 0);
+  signal py_r  : signed(C_W_PROD - 1 downto 0);
+  signal pz_r  : signed(C_W_Z - 1 downto 0);
+  signal rx_r  : signed(C_W_PROD - 1 downto 0);
+  signal ry_r  : signed(C_W_PROD - 1 downto 0);
+  signal ang_q : signed(C_W_ANG - 1 downto 0);
+
+  -- One bit for the input register, C_N_STAGES for the iterations, three for
+  -- the output stages.
+  signal vld : std_logic_vector(C_N_STAGES + 3 downto 0);
 
 begin
 
@@ -202,35 +211,48 @@ begin
   end generate g_stage;
 
   -- ---------------------------------------------------------------------------
-  -- Output register: undo the processing gain, requantise to Q2.13 with rounding
-  -- and saturate.  The angle is reduced modulo one turn, which is exact.
+  -- Output stages: undo the processing gain, requantise to Q2.13 with rounding
+  -- and saturate.  The angle is reduced modulo one turn, which is exact.  The
+  -- three steps are the same arithmetic as one expression would be; they are
+  -- given a register each because the multiply, the 42-bit rounding add and the
+  -- compare together are three times what fits in a 10 ns clock.
   -- ---------------------------------------------------------------------------
   p_output : process (clk) is
-
-    variable rx : signed(C_W_PROD - 1 downto 0);
-    variable ry : signed(C_W_PROD - 1 downto 0);
-
   begin
 
-    if rising_edge(clk) and vld(C_N_STAGES) = '1' then
-      if G_COMPENSATE then
-        rx := round_shr(x(C_N_STAGES) * to_signed(C_KINV, C_W_KINV),
-                        C_Q_KINV + C_GUARD);
-        ry := round_shr(y(C_N_STAGES) * to_signed(C_KINV, C_W_KINV),
-                        C_Q_KINV + C_GUARD);
-      else
-        rx := round_shr(resize(x(C_N_STAGES), C_W_PROD), C_GUARD);
-        ry := round_shr(resize(y(C_N_STAGES), C_W_PROD), C_GUARD);
+    if rising_edge(clk) then
+      if vld(C_N_STAGES) = '1' then
+        if G_COMPENSATE then
+          px_r <= x(C_N_STAGES) * to_signed(C_KINV, C_W_KINV);
+          py_r <= y(C_N_STAGES) * to_signed(C_KINV, C_W_KINV);
+        else
+          px_r <= resize(x(C_N_STAGES), C_W_PROD);
+          py_r <= resize(y(C_N_STAGES), C_W_PROD);
+        end if;
+        pz_r <= z(C_N_STAGES);
       end if;
 
-      x_r   <= sat_to(rx, C_W_DATA);
-      y_r   <= sat_to(ry, C_W_DATA);
-      ang_r <= wrap_to(round_shr(z(C_N_STAGES), C_Z_SHIFT), C_W_ANG);
+      if vld(C_N_STAGES + 1) = '1' then
+        if G_COMPENSATE then
+          rx_r <= round_shr(px_r, C_Q_KINV + C_GUARD);
+          ry_r <= round_shr(py_r, C_Q_KINV + C_GUARD);
+        else
+          rx_r <= round_shr(px_r, C_GUARD);
+          ry_r <= round_shr(py_r, C_GUARD);
+        end if;
+        ang_q <= wrap_to(round_shr(pz_r, C_Z_SHIFT), C_W_ANG);
+      end if;
 
-      if overflows(rx, C_W_DATA) or overflows(ry, C_W_DATA) then
-        sat_r <= '1';
-      else
-        sat_r <= '0';
+      if vld(C_N_STAGES + 2) = '1' then
+        x_r   <= sat_to(rx_r, C_W_DATA);
+        y_r   <= sat_to(ry_r, C_W_DATA);
+        ang_r <= ang_q;
+
+        if overflows(rx_r, C_W_DATA) or overflows(ry_r, C_W_DATA) then
+          sat_r <= '1';
+        else
+          sat_r <= '0';
+        end if;
       end if;
     end if;
 

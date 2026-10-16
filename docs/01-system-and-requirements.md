@@ -21,7 +21,7 @@ else the firmware is doing. Jitter in those instants is indistinguishable, to th
 control loop, from noise on the current measurement.
 
 This repository puts the whole loop in fabric. The modulator issues its own
-sample strobe at the carrier trough, the datapath answers 66 clocks later and
+sample strobe at the carrier trough, the datapath answers 92 clocks later and
 the modulator takes the answer at the next trough. There is no software in the
 loop, no interrupt and no scheduler, so the control period is the PWM period
 exactly and the jitter is zero by construction.
@@ -31,7 +31,7 @@ exactly and the jitter is zero by construction.
 Three reasons, in the order a business would care about them.
 
 **Axis count.** The datapath is fully pipelined and accepts one operation per
-clock. One control update takes 66 clocks out of the 5000 in a PWM period, so a
+clock. One control update takes 92 clocks out of the 5000 in a PWM period, so a
 single instance has the throughput for far more than one motor. A six-axis robot
 arm or a four-wheel AGV needs one FPGA and one set of gate drivers per leg,
 rather than one microcontroller per axis with the synchronisation problem that
@@ -42,7 +42,7 @@ the same clock. Cross-axis current measurements are simultaneous, which matters
 the moment anything downstream tries to estimate load, detect a collision or
 share a DC link.
 
-**Latency headroom for what comes next.** The transform arithmetic costs 0.66 us
+**Latency headroom for what comes next.** The transform arithmetic costs 0.92 us
 of a 50 us period. That leaves the period essentially empty, which is what makes
 sensorless observers, high-frequency injection or a fast current-derivative
 protection trip possible later without re-architecting anything.

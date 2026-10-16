@@ -66,7 +66,7 @@ drive the two transistors of a leg on together.
 | 5 | QEI_INDEX | an index pulse has been seen since the last clear, sticky |
 
 OVERRUN cannot happen with the design wired as intended, because the modulator
-strobes once per 5000 clocks against a datapath latency of 66. It exists so that a
+strobes once per 5000 clocks against a datapath latency of 92. It exists so that a
 system that reconfigured PWM_TOP to something absurd or drove the sample input
 from somewhere else, would find out rather than silently produce a corrupt
 result.

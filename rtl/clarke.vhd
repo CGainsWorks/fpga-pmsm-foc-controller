@@ -23,7 +23,9 @@
 -- The saving is real money per unit shipped, which is the sort of thing that
 -- decides whether a control block is used.
 --
--- Latency one clock.
+-- Latency three clocks: the sum, the multiply and the rounding with
+-- saturation each have one, so that no clock carries more than one carry chain
+-- or one multiplier.
 -- -----------------------------------------------------------------------------
 
 library ieee;
@@ -62,28 +64,42 @@ architecture rtl of clarke is
   signal ibe_r : signed(C_W_DATA - 1 downto 0) := (others => '0');
   signal sat_r : std_logic                     := '0';
 
-  signal vld : std_logic;
+  signal t1_r  : signed(C_W_SUM - 1 downto 0);
+  signal ia1_r : signed(C_W_DATA - 1 downto 0);
+  signal p2_r  : signed(C_W_PROD - 1 downto 0);
+  signal ia2_r : signed(C_W_DATA - 1 downto 0);
+
+  signal vld : std_logic_vector(1 to 3);
 
 begin
 
   p_clarke : process (clk) is
 
-    variable t : signed(C_W_SUM - 1 downto 0);
     variable p : signed(C_W_PROD - 1 downto 0);
 
   begin
 
-    if rising_edge(clk) and in_valid = '1' then
-      t := resize(ia, C_W_SUM) + shift_left(resize(ib, C_W_SUM), 1);
-      p := round_shr(t * to_signed(C_INV_SQRT3, 16), C_Q_TRIG);
+    if rising_edge(clk) then
+      if in_valid = '1' then
+        t1_r  <= resize(ia, C_W_SUM) + shift_left(resize(ib, C_W_SUM), 1);
+        ia1_r <= ia;
+      end if;
 
-      ial_r <= ia;
-      ibe_r <= sat_to(p, C_W_DATA);
+      if vld(1) = '1' then
+        p2_r  <= t1_r * to_signed(C_INV_SQRT3, 16);
+        ia2_r <= ia1_r;
+      end if;
 
-      if overflows(p, C_W_DATA) then
-        sat_r <= '1';
-      else
-        sat_r <= '0';
+      if vld(2) = '1' then
+        p     := round_shr(p2_r, C_Q_TRIG);
+        ial_r <= ia2_r;
+        ibe_r <= sat_to(p, C_W_DATA);
+
+        if overflows(p, C_W_DATA) then
+          sat_r <= '1';
+        else
+          sat_r <= '0';
+        end if;
       end if;
     end if;
 
@@ -94,9 +110,9 @@ begin
 
     if rising_edge(clk) then
       if rst = '1' then
-        vld <= '0';
+        vld <= (others => '0');
       else
-        vld <= in_valid;
+        vld <= in_valid & vld(1 to 2);
       end if;
     end if;
 
@@ -105,6 +121,6 @@ begin
   ialpha    <= ial_r;
   ibeta     <= ibe_r;
   sat_out   <= sat_r;
-  out_valid <= vld;
+  out_valid <= vld(3);
 
 end architecture rtl;

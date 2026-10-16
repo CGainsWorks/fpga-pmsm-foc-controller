@@ -110,10 +110,10 @@ quantised to the 50 us sample grid, so 0.950 ms is the grid point next to 0.913.
 
 | Contribution | Time | Phase at 318 Hz |
 | --- | --- | --- |
-| Datapath, Clarke through to compare values, 66 clocks | 0.66 us | 0.076 degrees |
+| Datapath, Clarke through to compare values, 92 clocks | 0.92 us | 0.105 degrees |
 | Sample instant to the centre of the applied PWM period, 1.5 Ts | 75 us | 8.6 degrees |
 
-The arithmetic contributes **one hundredth** of the delay. That is the argument
+The arithmetic contributes **about one per cent** of the delay. That is the argument
 for putting the loop in fabric stated as a number: a software implementation
 taking 10 us would add 1.1 degrees, which is still small but it would add it
 with jitter and jitter is not something a phase margin can absorb. What is left

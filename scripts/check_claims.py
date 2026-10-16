@@ -87,7 +87,7 @@ def build_claims() -> list[tuple[str, str]]:
     kp, ki = quantised_gains()
     a = (kp + ki) * (1.0 - plant_pole()) / P.R_PU
     adc_lsb = 2.0 * P.ADC_FULL_SCALE_PU / (1 << P.ADC_BITS)
-    latency = 66
+    latency = P.LOOP_LATENCY
     lat_s = latency / P.F_CLK
     omega_e_500 = 500.0 / 60.0 * 2.0 * math.pi * P.POLE_PAIRS
     base_rpm = P.V_BASE / P.PSI_F / P.POLE_PAIRS * 60.0 / (2.0 * math.pi)
