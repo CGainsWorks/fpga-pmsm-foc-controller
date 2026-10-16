@@ -2,13 +2,17 @@
 -- tb_pkg
 --
 -- Shared testbench machinery: reading the generated vector files, comparing
--- against them and ending the run with an exit code the build can act on.
+-- against them and deciding whether the run passed.
 --
 -- Every testbench in this repository is self-checking.  None of them produce a
 -- waveform for a person to look at and none of them pass by not crashing: each
 -- one counts its comparisons, reports the count and fails the simulation if any
 -- comparison did not hold.  A testbench that reports zero comparisons fails too,
 -- because a vector file that failed to open would otherwise look like a pass.
+--
+-- Ending the simulation belongs to the VUnit runner (run.py).  Each testbench
+-- calls finish_report and then test_runner_cleanup, so a failure here stops the
+-- run before VUnit can record a pass and a clean report lets it finish.
 -- -----------------------------------------------------------------------------
 
 library ieee;
@@ -17,7 +21,6 @@ library ieee;
 
 library std;
   use std.textio.all;
-  use std.env.all;
 
 package tb_pkg is
 
@@ -60,7 +63,7 @@ package tb_pkg is
     ok     : out   boolean
   );
 
-  -- Report and end the simulation.  Fails on any error and on no checks at all.
+  -- Report the totals.  Fails on any error and on no checks at all.
 
   procedure finish_report (
     name   : in string;
@@ -190,7 +193,6 @@ package body tb_pkg is
     assert errs = 0
       report name & ": FAILED"
       severity failure;
-    finish;
 
   end procedure finish_report;
 

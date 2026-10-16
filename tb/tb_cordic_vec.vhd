@@ -21,13 +21,17 @@ library ieee;
 library std;
   use std.textio.all;
 
+library vunit_lib;
+  context vunit_lib.vunit_context;
+
 library work;
   use work.foc_pkg.all;
   use work.tb_pkg.all;
 
 entity tb_cordic_vec is
   generic (
-    G_VECTORS : string := "sim/vectors/cordic_vec.txt"
+    RUNNER_CFG : string;
+    G_VECTORS  : string := "sim/vectors/cordic_vec.txt"
   );
 end entity tb_cordic_vec;
 
@@ -139,6 +143,8 @@ begin
 
   begin
 
+    test_runner_setup(runner, RUNNER_CFG);
+
     wait until rst = '0';
     file_open(fc, G_VECTORS, read_mode);
 
@@ -198,6 +204,7 @@ begin
            & " LSB, worst argument error " & real'image(worsta) & " counts"
       severity note;
     finish_report("tb_cordic_vec", errs, 3 * n);
+    test_runner_cleanup(runner);
     wait;
 
   end process p_check;

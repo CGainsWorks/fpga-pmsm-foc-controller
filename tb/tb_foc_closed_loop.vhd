@@ -54,12 +54,18 @@ library ieee;
   use ieee.numeric_std.all;
   use ieee.math_real.all;
 
+library vunit_lib;
+  context vunit_lib.vunit_context;
+
 library work;
   use work.foc_pkg.all;
   use work.machine_pkg.all;
   use work.tb_pkg.all;
 
 entity tb_foc_closed_loop is
+  generic (
+    RUNNER_CFG : string
+  );
 end entity tb_foc_closed_loop;
 
 architecture sim of tb_foc_closed_loop is
@@ -274,6 +280,8 @@ begin
 
   begin
 
+    test_runner_setup(runner, RUNNER_CFG);
+
     -- The carrier and the clock have to give the control period the gains were
     -- derived for.  Otherwise every prediction below is about a different loop.
     assert (2 * C_TOP * C_PERIOD) / 1 ns = integer(C_TS * 1.0e9)
@@ -437,6 +445,7 @@ begin
     end loop;
 
     finish_report("tb_foc_closed_loop", errs, checks);
+    test_runner_cleanup(runner);
     wait;
 
   end process p_run;

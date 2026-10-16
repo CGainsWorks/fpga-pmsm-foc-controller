@@ -20,11 +20,17 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
+library vunit_lib;
+  context vunit_lib.vunit_context;
+
 library work;
   use work.foc_pkg.all;
   use work.tb_pkg.all;
 
 entity tb_axi4lite_regs is
+  generic (
+    RUNNER_CFG : string
+  );
 end entity tb_axi4lite_regs;
 
 architecture sim of tb_axi4lite_regs is
@@ -229,6 +235,8 @@ begin
 
   begin
 
+    test_runner_setup(runner, RUNNER_CFG);
+
     wait until aresetn = '1';
     wait until rising_edge(clk);
 
@@ -323,6 +331,7 @@ begin
     checks := checks + 2;
 
     finish_report("tb_axi4lite_regs", errs, checks);
+    test_runner_cleanup(runner);
     wait;
 
   end process p_run;

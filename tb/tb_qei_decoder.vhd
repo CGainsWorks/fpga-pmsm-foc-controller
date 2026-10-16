@@ -25,10 +25,16 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
+library vunit_lib;
+  context vunit_lib.vunit_context;
+
 library work;
   use work.tb_pkg.all;
 
 entity tb_qei_decoder is
+  generic (
+    RUNNER_CFG : string
+  );
 end entity tb_qei_decoder;
 
 architecture sim of tb_qei_decoder is
@@ -160,6 +166,8 @@ begin
 
   begin
 
+    test_runner_setup(runner, RUNNER_CFG);
+
     drive(0);
     wait until rst = '0';
 
@@ -287,6 +295,7 @@ begin
     checks := checks + 1;
 
     finish_report("tb_qei_decoder", errs, checks);
+    test_runner_cleanup(runner);
     wait;
 
   end process p_run;

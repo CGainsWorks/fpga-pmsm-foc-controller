@@ -25,12 +25,16 @@ library ieee;
 library std;
   use std.textio.all;
 
+library vunit_lib;
+  context vunit_lib.vunit_context;
+
 library work;
   use work.foc_pkg.all;
   use work.tb_pkg.all;
 
 entity tb_svm is
   generic (
+    RUNNER_CFG : string;
     G_VECTORS  : string  := "sim/vectors/svm.txt";
     G_PWM_BITS : natural := 13
   );
@@ -156,6 +160,8 @@ begin
 
   begin
 
+    test_runner_setup(runner, RUNNER_CFG);
+
     wait until rst = '0';
     file_open(fc, G_VECTORS, read_mode);
 
@@ -206,6 +212,7 @@ begin
 
     file_close(fc);
     finish_report("tb_svm", errs, 4 * n);
+    test_runner_cleanup(runner);
     wait;
 
   end process p_check;

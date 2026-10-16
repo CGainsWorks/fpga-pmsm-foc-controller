@@ -26,12 +26,16 @@ library ieee;
 library std;
   use std.textio.all;
 
+library vunit_lib;
+  context vunit_lib.vunit_context;
+
 library work;
   use work.foc_pkg.all;
   use work.tb_pkg.all;
 
 entity tb_current_loop is
   generic (
+    RUNNER_CFG : string;
     G_VECTORS  : string  := "sim/vectors/current_loop.txt";
     G_PWM_BITS : natural := 13
   );
@@ -133,6 +137,8 @@ begin
 
   begin
 
+    test_runner_setup(runner, RUNNER_CFG);
+
     wait until rst = '0';
     wait until rising_edge(clk);
     file_open(f, G_VECTORS, read_mode);
@@ -195,6 +201,7 @@ begin
     file_close(f);
     check_true("no overrun was flagged", sat_flags(0) = '0', errs);
     finish_report("tb_current_loop", errs, 7 * n);
+    test_runner_cleanup(runner);
     wait;
 
   end process p_run;

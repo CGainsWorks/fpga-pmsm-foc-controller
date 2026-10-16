@@ -34,11 +34,15 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
+library vunit_lib;
+  context vunit_lib.vunit_context;
+
 library work;
   use work.tb_pkg.all;
 
 entity tb_pwm3ph is
   generic (
+    RUNNER_CFG : string;
     G_PWM_BITS : natural := 13;
     G_DT_BITS  : natural := 10
   );
@@ -112,6 +116,8 @@ begin
     variable exp    : natural;
 
   begin
+
+    test_runner_setup(runner, RUNNER_CFG);
 
     wait until rst = '0';
 
@@ -271,6 +277,7 @@ begin
     checks := checks + 4 * C_TOP;
 
     finish_report("tb_pwm3ph", errs, checks);
+    test_runner_cleanup(runner);
     wait;
 
   end process p_run;

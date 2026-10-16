@@ -29,13 +29,17 @@ library ieee;
 library std;
   use std.textio.all;
 
+library vunit_lib;
+  context vunit_lib.vunit_context;
+
 library work;
   use work.foc_pkg.all;
   use work.tb_pkg.all;
 
 entity tb_pi_axis is
   generic (
-    G_VECTORS : string := "sim/vectors/pi_axis.txt"
+    RUNNER_CFG : string;
+    G_VECTORS  : string := "sim/vectors/pi_axis.txt"
   );
 end entity tb_pi_axis;
 
@@ -156,6 +160,8 @@ begin
 
   begin
 
+    test_runner_setup(runner, RUNNER_CFG);
+
     wait until rst = '0';
     file_open(fc, G_VECTORS, read_mode);
 
@@ -182,6 +188,7 @@ begin
 
     file_close(fc);
     finish_report("tb_pi_axis", errs, 2 * n);
+    test_runner_cleanup(runner);
     wait;
 
   end process p_check;

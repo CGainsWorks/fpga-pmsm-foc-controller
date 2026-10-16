@@ -3,7 +3,7 @@
 #
 #   make            everything CI runs, in the order CI runs it
 #   make vectors    regenerate the testbench stimulus from the golden models
-#   make sim        analyse and run every testbench
+#   make sim        run every testbench under VUnit (run.py)
 #   make sim-one TB=tb_cordic_rot     one testbench
 #   make synth      elaborate every unit through the synthesiser
 #   make lint       VHDL style and Python lint
@@ -19,13 +19,9 @@ GHDL    ?= ghdl
 PYTHON  ?= python3
 STD     ?= 08
 WORKDIR ?= sim/build
+JOBS    ?= 4
 
 GHDL_FLAGS = --std=$(STD) --workdir=$(WORKDIR) -frelaxed
-
-# Errors accumulate and the testbench decides at the end, so simulation must not
-# stop on the first one.  Only a failure severity stops a run and the only place
-# that is raised is tb_pkg.finish_report.
-GHDL_RUN = --assert-level=failure
 
 # Analysis order is dependency order: packages, then leaves, then the top.
 RTL = \
@@ -41,19 +37,7 @@ RTL = \
 	rtl/axi4lite_regs.vhd \
 	rtl/foc_top.vhd
 
-TBSRC = \
-	tb/tb_pkg.vhd \
-	tb/machine_pkg.vhd \
-	tb/tb_cordic_rot.vhd \
-	tb/tb_cordic_vec.vhd \
-	tb/tb_clarke.vhd \
-	tb/tb_pi_axis.vhd \
-	tb/tb_svm.vhd \
-	tb/tb_current_loop.vhd \
-	tb/tb_pwm3ph.vhd \
-	tb/tb_qei_decoder.vhd \
-	tb/tb_axi4lite_regs.vhd \
-	tb/tb_foc_closed_loop.vhd
+TBSRC = $(wildcard tb/*.vhd)
 
 # Every synthesisable unit, leaves before the things that instantiate them.
 SYNTH_UNITS = \
@@ -66,18 +50,6 @@ SYNTH_UNITS = \
 	axi4lite_regs \
 	current_loop \
 	foc_top
-
-TESTS = \
-	tb_cordic_rot \
-	tb_cordic_vec \
-	tb_clarke \
-	tb_pi_axis \
-	tb_svm \
-	tb_current_loop \
-	tb_pwm3ph \
-	tb_qei_decoder \
-	tb_axi4lite_regs \
-	tb_foc_closed_loop
 
 VECTORS = sim/vectors/cordic_rot.txt
 
@@ -98,23 +70,23 @@ vectors: $(VECTORS)
 $(VECTORS): scripts/gen_vectors.py focmodel/*.py
 	$(PYTHON) scripts/gen_vectors.py
 
+# The RTL only.  The testbenches need the VUnit libraries and run.py compiles
+# them, in dependency order, into its own output folder.
 analyse: | $(WORKDIR)
-	@for f in $(RTL) $(TBSRC); do \
+	@for f in $(RTL); do \
 		echo "  analyse $$f"; \
 		$(GHDL) -a $(GHDL_FLAGS) $$f || exit 1; \
 	done
 
-sim: analyse vectors
-	@fail=0; \
-	for t in $(TESTS); do \
-		echo "=== $$t"; \
-		$(GHDL) --elab-run $(GHDL_FLAGS) $$t $(GHDL_RUN) || fail=1; \
-	done; \
-	if [ $$fail -ne 0 ]; then echo "SIMULATION FAILED"; exit 1; fi; \
-	echo "all testbenches passed"
+# Every testbench, one simulation per test case, through VUnit.  The file list
+# lives in run.py and VUnit finds the test cases in it, so there is no second
+# list here to forget.  Each testbench still counts its own comparisons and
+# fails on any mismatch or on none at all.
+sim: vectors
+	$(PYTHON) run.py -p $(JOBS) --xunit-xml sim/vunit.xml
 
-sim-one: analyse vectors
-	$(GHDL) --elab-run $(GHDL_FLAGS) $(TB) $(GHDL_RUN)
+sim-one: vectors
+	$(PYTHON) run.py "foc_lib.$(TB).*"
 
 # Synthesis smoke test.  This produces no bitstream and makes no timing claim;
 # it proves the RTL elaborates through a synthesiser, which is what catches a
@@ -158,5 +130,5 @@ test:
 	$(PYTHON) -m pytest -q
 
 clean:
-	rm -rf $(WORKDIR) sim/vectors/*.txt .pytest_cache .ruff_cache
+	rm -rf $(WORKDIR) sim/vectors/*.txt sim/vunit.xml vunit_out .pytest_cache .ruff_cache
 	find . -name '__pycache__' -type d -prune -exec rm -rf {} +

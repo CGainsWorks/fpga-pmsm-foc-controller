@@ -22,3 +22,7 @@ venv/
 .vscode/
 .idea/
 *.swp
+
+# VUnit output and its xunit report
+vunit_out/
+sim/vunit.xml
