@@ -9,32 +9,42 @@ documented, derived and tested. That is a real result and it is a limited one.
 Specifically, **none of the following is claimed anywhere and none of it should
 be inferred**:
 
-* that the design closes timing at 100 MHz on any device,
+* that the design closes timing at 100 MHz in a vendor tool on any device,
 * any resource count from a vendor synthesis or place-and-route tool,
 * any measured current waveform, step response, efficiency or thermal figure,
 * that the dead time is adequate for any real gate driver and transistor pair,
 * that the encoder filter is adequate against any real motor cable.
 
-The synthesis step in CI elaborates all nine units through GHDL's synthesiser,
-which catches a construct that simulates and cannot be built. It is not a
-place-and-route and it produces no timing number.
+What is now in the repository is an **open-tool estimate** for one device. CI
+synthesises the design with GHDL and Yosys and places and routes it with
+nextpnr-ecp5 for a Lattice ECP5 LFE5U-45F-8BG381C and fails unless nextpnr's
+timing analysis meets 100 MHz. The result, 105.76 MHz with the utilisation
+alongside, is in [fpga/ecp5/results.md](../fpga/ecp5/results.md) and
+[docs/11](11-implementation.md) explains it. The margin is under 6 per cent and
+the critical path is the decoder's position times scale multiply. It is not a
+vendor sign-off, the I/O is unconstrained and no power figure exists.
 
 ### What would close the gap
 
 In order and none of it needs an unusual board:
 
-1. **Vendor synthesis.** Vivado or Quartus on a small part, for a resource count
-   and a timing report. Expected to be the easy step: the design has no wide
-   combinational paths except the PI's single-cycle comparison chain, which is
-   the first place a timing report would point.
+1. **Vendor synthesis.** Lattice Radiant or Diamond for the ECP5 the open flow
+   targets, or Vivado or Quartus on a small part, for a sign-off timing report
+   and a resource count with a board constraint file. The open flow has already
+   found and removed the long paths (docs/11); the vendor run is what would
+   turn its estimate into a claim.
 2. **Bench bring-up on an evaluation board with a three-phase inverter.** An
    Arty or a Cmod with a small BLDC driver board and a 24 V supply is enough.
    The bring-up procedure is in docs/08.
 3. **Locked-rotor step response on a real machine**, measured with a current
    probe, against the 0.913 ms the analysis predicts. This is the measurement
    that would turn the closed-loop testbench result into a claim about hardware.
-4. **A rotating test with the encoder in the loop**, checking that the d-axis
-   current stays at zero while the machine turns under load.
+4. **A rotating test with the encoder in the loop on a real machine**,
+   checking that the d-axis current stays at zero while it turns under load.
+   The simulated version of this test now runs in CI: `tb_foc_closed_loop`
+   drives the encoder pins from a shaft model and the design takes its angle
+   from its own decoder. The shaft model imposes the speed; there is no
+   mechanical load model.
 
 Until at least step 1 and step 3 are done, the honest summary of this repository
 is: a fully derived, fully simulated field-oriented control coprocessor with a

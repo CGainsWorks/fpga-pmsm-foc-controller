@@ -13,9 +13,10 @@ the system already fixes and the derivation is written down next to the number.
 
 > ### No hardware
 > This has never been on an FPGA and has never turned a motor. Everything here is
-> verified in simulation against documented models. There is no timing closure
-> figure, no vendor resource count and no measurement on a machine anywhere in
-> this repository and none should be inferred.
+> verified in simulation against documented models. The only timing and resource
+> figures are **open-tool estimates** (Yosys and nextpnr) for one Lattice ECP5
+> part, in [fpga/ecp5/results.md](fpga/ecp5/results.md). No vendor tool has been
+> run, nothing has been measured on a machine and none should be inferred.
 > **[docs/10-limitations-and-roadmap.md](docs/10-limitations-and-roadmap.md)**
 > sets out exactly what that leaves unclaimed and what would close the gap.
 
@@ -33,16 +34,18 @@ the system already fixes and the derivation is written down next to the number.
 
 ```bash
 pip install -r requirements.txt
-make            # lint, model tests, vectors, ten testbenches, synthesis check
+make            # lint, model tests, vectors, every testbench, synthesis check
 ```
 
-Needs GHDL 5 or later and Python 3.10 or later. Individual pieces:
+Needs GHDL 5 or later and Python 3.10 or later. The testbenches run under VUnit
+4.7.1, which `requirements.txt` pins. Individual pieces:
 
 ```bash
 make test       # the Python model test suite
-make sim        # analyse and run every testbench
+make sim        # every testbench under VUnit (python run.py)
 make sim-one TB=tb_foc_closed_loop
 make synth      # elaborate every unit through the synthesiser
+make ecp5       # Yosys and nextpnr for an ECP5 at 100 MHz (needs Docker)
 make lint       # VHDL and Python style
 ```
 
@@ -62,8 +65,12 @@ make lint       # VHDL and Python style
 | [rtl/axi4lite_regs.vhd](rtl/axi4lite_regs.vhd) | AXI4-Lite register file |
 | [rtl/foc_top.vhd](rtl/foc_top.vhd) | all of the above, wired together by one strobe |
 | [focmodel/](focmodel/) | bit-accurate Python models and the control analysis |
-| [tb/](tb/) | ten self-checking testbenches |
+| [tb/](tb/) | ten self-checking testbenches and the shaft and encoder model |
+| [run.py](run.py) | the VUnit regression runner |
+| [scripts/ecp5_flow.sh](scripts/ecp5_flow.sh) | open synthesis, place and route for ECP5 |
+| [fpga/ecp5/](fpga/ecp5/) | the generated timing and resource results |
 | [docs/](docs/) | the derivations |
+| [STATUS.md](STATUS.md) | what is done, what is not and what is only simulated |
 
 ---
 
@@ -175,16 +182,27 @@ Three layers, each catching what the others cannot.
    and report the worst error they saw. Layer two alone would pass if the model
    and the RTL were wrong in the same way.
 
-Ten self-checking testbenches. Each counts its comparisons, prints the count and
-fails if any comparison did not hold **or if it ran no comparisons at all**,
-because a vector file that failed to open would otherwise look like a pass.
+Ten self-checking testbenches, run by VUnit as 13 test cases. Each counts its
+comparisons, prints the count and fails if any comparison did not hold **or if
+it ran no comparisons at all**, because a vector file that failed to open would
+otherwise look like a pass.
 
 `tb_foc_closed_loop` is the one that would notice if the design were internally
 consistent and still could not control a motor: it configures the top level over
 its own AXI4-Lite interface and closes a loop around a per-unit PMSM model, first
-at locked rotor against the predicted rise time, then turning at 500 rpm where
-0.151 per unit of back-EMF and 0.045 of cross-coupling have to be rejected by
-integrators that were never told they exist.
+at locked rotor against the predicted rise time, then turning at 500 rpm forward
+and in reverse, where 0.151 per unit of back-EMF and 0.045 of cross-coupling
+have to be rejected by integrators that were never told they exist.
+
+**The encoder decoder is in that loop.** A shaft and encoder model
+([tb/encoder_model.vhd](tb/encoder_model.vhd)) turns the rotor at an imposed
+speed, as a dynamometer would and drives the A and B pins of a 2500 line
+encoder. The design takes its angle from its own quadrature decoder, with
+`CTRL.MANUAL` clear and the decoder's position, speed and angle registers are
+read back over AXI and checked against the shaft. A fourth case swaps A and B
+and requires the loop to lose control, which shows the angle really comes from
+the pins. The speed is imposed rather than integrated from torque and the index
+channel is tested on its own in `tb_qei_decoder`, not in the loop.
 
 Three mechanisms stop the layers drifting apart, all in CI: the angle table and
 the machine constants are generated from the models and regenerated to check;
@@ -197,6 +215,32 @@ construct that simulates and cannot be built. Six of them used to crash the
 tool outright; [docs/09](docs/09-verification.md) records how that was reduced
 to one function out of four, narrowing a wide operand, plus the reformulation
 that fixed it.
+
+---
+
+## Synthesis and timing (open tools, one device)
+
+A second CI job synthesises the design with GHDL and Yosys and places and routes
+it with nextpnr-ecp5 for a **Lattice ECP5 LFE5U-45F-8BG381C** at the 100 MHz
+fabric clock, from container images pinned by digest. It fails if timing is not
+met and it fails if the committed figures go stale.
+
+| Tool estimate, LFE5U-45F-8BG381C | |
+| --- | --- |
+| Fmax of the fabric clock, nextpnr | 105.76 MHz against 100 MHz |
+| Logic cells | 16843 of 43848 (38.4 per cent) |
+| Flip-flops | 7487 of 43848 (17.1 per cent) |
+| 18x18 multipliers | 33 of 72 |
+| Block RAM | none |
+
+These are estimates from open tools for that one part, with I/O placed by the
+tool and unconstrained. The production path is the vendor's own flow (Radiant
+or Diamond for ECP5, Vivado or Quartus elsewhere) with a board constraint file
+and **none of those has been run**. The first run put the design at 26.8 MHz (on
+a speed grade 6 part); the datapath was then pipelined, bit for bit the same
+arithmetic, which took the latency from 66 clocks to 92. Full table in
+[fpga/ecp5/results.md](fpga/ecp5/results.md), the story in
+[docs/11](docs/11-implementation.md).
 
 ---
 

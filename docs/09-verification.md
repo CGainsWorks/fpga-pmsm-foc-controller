@@ -6,6 +6,13 @@ and returns an exit code. A testbench that manages to run zero comparisons fails
 because a vector file that failed to open would otherwise look exactly like a
 pass.
 
+The regression runner is VUnit 4.7.1, pinned in `requirements.txt` and driven by
+`run.py`. It compiles the RTL and the testbenches, runs one simulation per test
+case in parallel and writes an xunit report. The ten testbenches give 13 test
+cases: nine testbenches run as one case each and `tb_foc_closed_loop` runs as
+four. VUnit decides nothing about pass or fail beyond what the testbench itself
+reports, so the checks below are the testbenches' own.
+
 ## The three-layer arrangement
 
 **Layer one: the models test themselves.** `tests/` checks the properties the
@@ -41,11 +48,11 @@ Each layer catches something the others cannot.
 | `tb_clarke` | 600 pairs including a full electrical turn of a balanced set and inputs outside it that must saturate | model and math_real |
 | `tb_pi_axis` | 850 samples: into the limit, held there, error reversed, then a random tail with one-LSB errors | model |
 | `tb_svm` | 600 vectors, plus the centring property `max + min = top` on every one inside the linear range | model and property |
-| `tb_current_loop` | 400 updates through the whole datapath, checking id, iq, vd, vq and all three compare values | model |
+| `tb_current_loop` | 400 updates through the whole datapath, checking id, iq, vd, vq, all three compare values and the 92-clock latency | model |
 | `tb_pwm3ph` | carrier period, high time in clocks, dead-time interval count and length, narrow-pulse behaviour, never-both-on on every clock | derived properties |
 | `tb_qei_decoder` | counting both ways, both wraps, index zeroing, the invalid-transition error, the speed estimate | exact integer expectations |
 | `tb_axi4lite_regs` | every register, byte strobes, the self-clearing command bit, read-only and unmapped writes, strict handshaking | protocol and map |
-| `tb_foc_closed_loop` | the whole design controlling a machine model, configured over its own AXI interface | control theory |
+| `tb_foc_closed_loop` | the whole design controlling a machine model through the encoder decoder, configured over its own AXI interface; four test cases | control theory |
 
 ## What tb_current_loop is for
 
@@ -73,7 +80,16 @@ in fifty sub-steps per PWM period. The plant is driven from the compare values t
 design actually applies and the currents it produces go back in through a model
 of the 12-bit converter.
 
-Two phases:
+The rotor angle reaches the design the way it would on a drive: through the
+encoder pins. `tb/encoder_model.vhd` turns the shaft at an imposed speed, as a
+dynamometer holds a drive under test and drives A and B of a 2500 line encoder
+from the true angle. `CTRL.MANUAL` is clear, so the current loop uses the angle
+the quadrature decoder works out from those edges and the machine model reads
+the same shaft angle back at every strobe so there is one rotor. Before this the
+testbench wrote the angle to `THETA_MAN` over AXI with the encoder inputs tied
+low and the decoder was tested only on its own.
+
+Four test cases:
 
 **Locked rotor.** The classic bench measurement of a current loop. Hold the
 rotor, step the torque-current reference, time the response. The exact sampled
@@ -82,10 +98,27 @@ testbench asserts the measured figure is within 25 per cent of it, reports both
 and additionally requires the steady-state error inside 0.005 per unit, no
 significant overshoot and the d axis at zero.
 
-**Turning at 500 rpm.** The back-EMF is 0.151 per unit and the cross-coupling
-term another 0.045, neither of which the controller is told about. Both have to be
-rejected by the integrators. A sign error anywhere in the Park or inverse Park
-path passes every static test in the repository and fails this one.
+**Turning at 500 rpm, forward and in reverse.** The back-EMF is 0.151 per unit
+and the cross-coupling term another 0.045, neither of which the controller is
+told about. Both have to be rejected by the integrators. A sign error anywhere in
+the Park or inverse Park path, or in the decoder's direction, passes every static
+test in the repository and fails one of these. The reverse case starts at count
+zero, so it also takes the decoder through its downward wrap. After each, the
+decoder's position, speed and angle registers and its error bit are read over
+AXI and compared with the shaft: position within one count, speed within one
+count per window and angle within two counts.
+
+**Encoder channels swapped.** The forward case with A and B wired the wrong way
+round, the classic commissioning fault. The decoder angle then runs backwards and
+the test requires the loop to lose the d axis (worst |id| above 0.1 per unit; it
+reaches about 0.26). It is the check that the angle really comes from the pins:
+if the loop were still fed its angle some other way, this case would regulate
+and fail.
+
+In simulation, with the decoder in the loop, the forward case settles to 0.2976
+per unit against 0.3 with a worst |id| of 0.0042; with the angle written
+directly it was 0.2976 and 0.0042. The encoder's quantisation, one count in 10000, costs nothing visible
+at this tolerance.
 
 The rotating phase is given 16 ms to settle and the reason is a result rather
 than a fudge: the pole cancellation removes the plant pole from the reference
@@ -131,15 +164,24 @@ Three mechanisms stop the three layers drifting apart and all three run in CI.
 * `scripts/check_claims.py` recomputes every number quoted in the README from the
   models and fails if the text says something else.
 
+## Synthesis, place and route
+
+A second CI job synthesises the whole design with Yosys and the GHDL plugin and
+places and routes it with nextpnr-ecp5 for an LFE5U-45F-8BG381C at 100 MHz. It
+fails if the tool's timing analysis says the clock is not met and it fails if
+the figures committed in [fpga/ecp5/results.md](../fpga/ecp5/results.md) no
+longer match what the tools produce. See
+[docs/11-implementation.md](11-implementation.md).
+
+The separate synthesis elaboration in job one still runs every unit through
+GHDL's synthesiser on its own, so a failure names an entity.
+
 ## What CI does not do
 
-It does not put the design on an FPGA. There is no timing closure figure, no
-resource count from a vendor tool and no measurement on a motor anywhere in this
-repository.
-
-The synthesis step elaborates all nine units through GHDL's synthesiser, which
-is what catches a construct that simulates and cannot be built. It is not a
-place-and-route and it makes no timing claim.
+It does not put the design on a board. The timing and resource figures are
+estimates from open tools for one device; no vendor tool (Radiant or Diamond for
+this part, Vivado or Quartus for others) has been run and there is no
+measurement on a motor anywhere in this repository.
 
 ## How the synthesis crash was found
 
