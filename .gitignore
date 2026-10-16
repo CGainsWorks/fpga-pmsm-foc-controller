@@ -26,3 +26,6 @@ venv/
 # VUnit output and its xunit report
 vunit_out/
 sim/vunit.xml
+
+# Synthesis and place-and-route working files (scripts/ecp5_flow.sh)
+build/

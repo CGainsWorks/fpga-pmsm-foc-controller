@@ -6,6 +6,7 @@
 #   make sim        run every testbench under VUnit (run.py)
 #   make sim-one TB=tb_cordic_rot     one testbench
 #   make synth      elaborate every unit through the synthesiser
+#   make ecp5       synthesise, place and route for the ECP5 target (Docker)
 #   make lint       VHDL style and Python lint
 #   make test       the Python model test suite
 #   make clean
@@ -53,7 +54,7 @@ SYNTH_UNITS = \
 
 VECTORS = sim/vectors/cordic_rot.txt
 
-.PHONY: all vectors tables analyse sim sim-one synth lint lint-vhdl lint-py test clean
+.PHONY: all vectors tables analyse sim sim-one synth ecp5 lint lint-vhdl lint-py test clean
 
 all: lint test tables vectors sim synth
 
@@ -117,6 +118,12 @@ synth: analyse
 	if [ -n "$$fail" ]; then echo "synthesis failed for:$$fail"; exit 1; fi; \
 	echo "every unit elaborated through the synthesiser"
 
+
+# Yosys with the GHDL plugin, then nextpnr-ecp5, both from pinned container
+# images.  Rewrites fpga/ecp5/results.* and fails if 100 MHz is not met.  See
+# docs/11-implementation.md.  Needs Docker, not GHDL.
+ecp5:
+	scripts/ecp5_flow.sh
 
 lint: lint-vhdl lint-py
 

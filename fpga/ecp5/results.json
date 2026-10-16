@@ -1,0 +1,70 @@
+{
+  "label": "Tool estimates from open-source synthesis and place-and-route for one device. Not a vendor sign-off and not measured on hardware.",
+  "target": {
+    "device": "LFE5U-45F-8BG381C",
+    "family": "Lattice ECP5",
+    "clock_constraint_mhz": 100.0,
+    "placer_seed": 1,
+    "io_constraints": "none; I/O placed by the tool, I/O paths not constrained"
+  },
+  "tools": {
+    "ghdl": "GHDL 7.0.0-dev (6.0.0.r537.g1e3c5ab06) [Dunoon edition]",
+    "yosys": "Yosys 0.66 (git sha1 86f2ddebc, clang++ 11.0.1-2 -fPIC -O3)",
+    "nextpnr": "nextpnr-ecp5 nextpnr-0.11.1-30-g3e53a0bf",
+    "synthesis_image": "hdlc/ghdl:yosys@sha256:99f4c645c546723fec31c2723f86bb2f6430e0842c3d5b6c8484c65b5b83c4c8",
+    "place_and_route_image": "hdlc/nextpnr:ecp5@sha256:79a4cede4ae824d634ed008ce263ca01106ded6ac6e33a035e48e71b9efc69f2"
+  },
+  "timing": {
+    "fmax_mhz": 105.76,
+    "constraint_mhz": 100,
+    "met": true,
+    "critical_path": {
+      "from": "u_qei.pos_i_TRELLIS_FF_Q_1",
+      "to": "u_qei.prod_TRELLIS_FF_Q",
+      "delay_ns": 9.455,
+      "logic_ns": 5.072,
+      "routing_ns": 4.383
+    }
+  },
+  "utilisation": {
+    "TRELLIS_COMB": {
+      "used": 16843,
+      "available": 43848
+    },
+    "TRELLIS_FF": {
+      "used": 7487,
+      "available": 43848
+    },
+    "MULT18X18D": {
+      "used": 33,
+      "available": 72
+    },
+    "ALU54B": {
+      "used": 0,
+      "available": 36
+    },
+    "DP16KD": {
+      "used": 0,
+      "available": 108
+    },
+    "TRELLIS_RAMW": {
+      "used": 0,
+      "available": 5481
+    },
+    "TRELLIS_IO": {
+      "used": 181,
+      "available": 245
+    },
+    "DCCA": {
+      "used": 1,
+      "available": 56
+    }
+  },
+  "synthesis_cells": {
+    "CCU2C": 4990,
+    "LUT4": 5095,
+    "MULT18X18D": 33,
+    "PFUMX": 165,
+    "TRELLIS_FF": 7487
+  }
+}

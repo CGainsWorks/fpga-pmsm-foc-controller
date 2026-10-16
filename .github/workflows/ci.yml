@@ -2,30 +2,28 @@ name: ci
 
 # What CI does here.
 #
-# It runs everything: the Python model test suite, the style checks, a
-# regeneration check on both generated VHDL files, the check that every figure
-# in the README still comes from the models, every testbench under GHDL with
-# VUnit as the runner and a synthesis elaboration of every unit. Nothing in this repository needs
-# hardware to be checked, because nothing in it claims a hardware result.
+# Job one runs the Python model test suite, the style checks, a regeneration
+# check on both generated VHDL files, the check that every figure in the README
+# still comes from the models, every testbench under GHDL with VUnit as the
+# runner and a synthesis elaboration of every unit.
 #
-# What it does not do is put the design on an FPGA. No timing closure figure, no
-# resource count from a vendor tool and no measurement on a motor appears
-# anywhere and docs/10-limitations-and-roadmap.md says so in the same words. The
-# synthesis step elaborates all nine units through GHDL's synthesiser, which
-# catches a construct that simulates and cannot be built. It is not a
-# place-and-route and it makes no timing claim.
+# Job two synthesises the whole design with Yosys and the GHDL plugin, places
+# and routes it with nextpnr-ecp5 for an LFE5U-45F-8BG381C and fails if the
+# tool's timing analysis says the 100 MHz fabric clock is not met. It also fails
+# if the resource and Fmax figures committed in fpga/ecp5/ no longer match what
+# the tools produce, so the published numbers cannot go stale. Those figures
+# are open-tool estimates for one device: no vendor tool has been run and
+# nothing has been on a board, and docs/10-limitations-and-roadmap.md says so.
 #
-# Why it is one job and not several.
+# Why two jobs.
 #
-# Runner time is billed per job, so two jobs running in parallel for a minute
-# each cost two minutes, while one job doing the same work sequentially costs
-# one. The whole run takes well under a minute of simulation, so there is
-# nothing to gain from splitting it and a factor of two to lose. Three further
-# economies, in order of how much they save:
+# Runner time is billed per job, so splitting work that takes a minute buys
+# nothing. Place and route takes several minutes, needs none of job one's
+# toolchain and depends on none of its results, so it runs alongside rather
+# than after. Further economies, in order of how much they save:
 #
-#   timeout-minutes caps a hung simulation at 15 minutes instead of the six
-#   hours a runner will otherwise sit there for. This is the one that matters:
-#   every other saving here is seconds, that one is hours.
+#   timeout-minutes caps a hung simulation or router at a fixed time instead of
+#   the six hours a runner will otherwise sit there for.
 #
 #   concurrency with cancel-in-progress stops a superseded push from finishing.
 #   Pushing three times in a minute then costs one run, not three.
@@ -45,14 +43,14 @@ concurrency:
 
 jobs:
   check:
-    name: models, testbenches and synthesis
-    runs-on: ubuntu-latest
+    name: models, testbenches and synthesis check
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -85,7 +83,7 @@ jobs:
       - name: README numbers are the model's numbers
         run: python scripts/check_claims.py
 
-      - uses: ghdl/setup-ghdl@v1
+      - uses: ghdl/setup-ghdl@v1.5.1
         with:
           version: "5.0.1"
           backend: llvm
@@ -105,3 +103,34 @@ jobs:
 
       - name: Elaborate every unit through the synthesiser
         run: make synth PYTHON=python
+
+  ecp5:
+    name: ECP5 synthesis, place and route, timing
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # The images are pinned by digest in the flow script, so this pulls
+      # exactly what produced the committed results.
+      - name: Pull the pinned tool images
+        run: |
+          grep -o 'hdlc/[a-z]*:[a-z0-9]*@sha256:[0-9a-f]*' scripts/ecp5_flow.sh \
+            | sort -u | xargs -n 1 docker pull -q
+
+      # Fails if timing at 100 MHz is not met or if fpga/ecp5/results.json no
+      # longer matches what the tools produce.
+      - name: Synthesise, place and route, check timing and the published figures
+        run: scripts/ecp5_flow.sh --check
+
+      - name: Keep the logs and the report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ecp5-build
+          path: |
+            build/ecp5/*.log
+            build/ecp5/report.json
+            build/ecp5/yosys_stat.txt
+          retention-days: 14
