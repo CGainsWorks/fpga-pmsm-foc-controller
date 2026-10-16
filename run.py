@@ -34,7 +34,7 @@ RTL = [
     "current_loop", "pwm3ph", "qei_decoder", "axi4lite_regs", "foc_top",
 ]
 TB = [
-    "tb_pkg", "machine_pkg",
+    "tb_pkg", "machine_pkg", "encoder_model",
     "tb_cordic_rot", "tb_cordic_vec", "tb_clarke", "tb_pi_axis", "tb_svm",
     "tb_current_loop", "tb_pwm3ph", "tb_qei_decoder", "tb_axi4lite_regs",
     "tb_foc_closed_loop",
