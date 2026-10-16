@@ -13,7 +13,7 @@ name: ci
 # if the resource and Fmax figures committed in fpga/ecp5/ no longer match what
 # the tools produce, so the published numbers cannot go stale. Those figures
 # are open-tool estimates for one device: no vendor tool has been run and
-# nothing has been on a board, and docs/10-limitations-and-roadmap.md says so.
+# nothing has been on a board. docs/10-limitations-and-roadmap.md says so.
 #
 # Why two jobs.
 #

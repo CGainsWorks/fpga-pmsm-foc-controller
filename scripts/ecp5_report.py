@@ -9,7 +9,7 @@ constraint, so timing that is not met fails the flow whatever else happens.
 
 The check mode compares resource counts exactly and Fmax within a small
 tolerance.  The flow is pinned by container digest and seed and has been
-deterministic in practice, but a placer is entitled to land a fraction of a
+deterministic in practice. A placer is entitled to land a fraction of a
 per cent differently on a different host CPU and that is not a regression.
 
 Every number written comes from the tools.  Nothing here is measured on

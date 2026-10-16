@@ -32,12 +32,12 @@
 -- entirely; the state is additionally clamped to +/- Umax so that a change of
 -- limit at run time cannot leave a stale value behind.
 --
--- Pipelining, and why the integrator still updates every clock.  Written
+-- Pipelining and why the integrator still updates every clock.  Written
 -- directly, one update is an add, a rounding add, a third add, a compare against
 -- the limit, a select and a second compare and select for the state clamp, all
 -- between one value of the integrator and the next.  The open place-and-route
 -- flow in fpga/ put that at 70 MHz.  The arithmetic before and after the
--- integrator pipelines freely, but the integrator itself is a recurrence and a
+-- integrator pipelines freely; the integrator itself is a recurrence and a
 -- register inside it would change the controller.
 --
 -- So the decisions are moved out of the recurrence instead.  With

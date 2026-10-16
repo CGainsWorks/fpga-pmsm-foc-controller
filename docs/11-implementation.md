@@ -89,7 +89,7 @@ datapath latency rose from 66 clocks to 92, 0.92 us of a 50 us period, which is
 
 * That a vendor flow closes at 100 MHz on this or any other part. Open-tool
   timing for ECP5 uses Project Trellis' timing database, which is derived from
-  the vendor's, but it is not the vendor's sign-off.
+  the vendor's yet it is not the vendor's sign-off.
 * Anything about I/O timing, which depends on a board.
 * Power. No power estimate is produced.
 * That the design works on silicon. Nothing has been programmed into a device.

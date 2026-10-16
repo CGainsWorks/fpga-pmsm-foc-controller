@@ -26,7 +26,7 @@ from vunit import VUnit
 ROOT = pathlib.Path(__file__).resolve().parent
 VECTORS = ROOT / "sim" / "vectors"
 
-# Dependency order does not matter to VUnit, which works it out, but the
+# Dependency order does not matter to VUnit, which works it out; the
 # lists are kept explicit so a stray file in rtl/ or tb/ is not silently pulled
 # into the build.
 RTL = [
@@ -40,7 +40,7 @@ TB = [
     "tb_foc_closed_loop",
 ]
 
-# Testbenches that read a generated vector file, and which file.
+# Testbenches that read a generated vector file and which file.
 VECTOR_FILES = {
     "tb_cordic_rot": "cordic_rot.txt",
     "tb_cordic_vec": "cordic_vec.txt",

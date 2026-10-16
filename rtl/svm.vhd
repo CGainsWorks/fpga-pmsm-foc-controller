@@ -36,7 +36,7 @@
 -- linear limit sits at exactly 1.0 per unit and d covers exactly [0, 1].
 --
 -- Pipelining.  Every stage below does one multiply, or one carry chain, or one
--- compare and select, and nothing more.  The arithmetic is the same operations
+-- compare and select and nothing more.  The arithmetic is the same operations
 -- in the same order as the original two-stage form, so the result is bit for bit
 -- what focmodel computes; only where the registers sit has changed.  It was the
 -- open place-and-route flow in fpga/ that showed the two-stage form, with two
